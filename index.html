@@ -1,0 +1,3717 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Staff Leave & WFH Planner</title>
+<style>
+:root{
+  --bg:#f6f3ee;--card:#fffdf9;--ink:#25221e;--muted:#766d61;--line:#e7dfd3;
+  --gold:#b99355;--gold2:#d8bd82;--danger:#b85042;--ok:#277a55;--blue:#416d9c;
+  --shadow:0 18px 45px rgba(52,42,28,.12);--radius:22px;
+}
+*{box-sizing:border-box} body{margin:0;font-family:Inter,Segoe UI,Arial,sans-serif;background:linear-gradient(135deg,#fbf8f1,#eee7dc);color:var(--ink)}
+header{padding:22px 28px;background:#201d19;color:#f8eddc;display:flex;justify-content:space-between;align-items:center;gap:12px;box-shadow:0 10px 30px rgba(0,0,0,.18)}
+header h1{margin:0;font-size:21px;font-weight:650;letter-spacing:.3px}.pill{display:inline-flex;align-items:center;gap:6px;border:1px solid rgba(216,189,130,.45);color:#f6dfad;border-radius:999px;padding:7px 11px;font-size:12px}
+.wrap{max-width:1380px;margin:24px auto;padding:0 18px}.grid{display:grid;grid-template-columns:330px 1fr;gap:18px}.card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);padding:18px}
+h2,h3{margin:0 0 13px} h2{font-size:20px} h3{font-size:16px;color:#4a3f33}.muted{color:var(--muted);font-size:13px;line-height:1.45}
+label{display:block;font-size:12px;color:#61574c;margin:10px 0 5px} input,select,textarea,button{font:inherit}
+input,select,textarea{width:100%;border:1px solid #ddd1c0;background:#fff;border-radius:14px;padding:10px 11px;outline:none} textarea{min-height:78px;resize:vertical}
+button{border:0;border-radius:14px;padding:10px 13px;background:#26211b;color:#fff;cursor:pointer;font-weight:650} button.secondary{background:#efe6d7;color:#2b261f;border:1px solid #dacbb7} button.gold{background:linear-gradient(135deg,#a57936,#d0ae6b)} button.danger{background:var(--danger)} button.ok{background:var(--ok)} button.small{font-size:12px;padding:7px 9px;border-radius:11px}
+.row{display:flex;gap:8px;align-items:center}.row>*{flex:1}.hide{display:none!important}.tabs{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px}.tab{padding:9px 12px;border-radius:999px;background:#eee2d2;color:#2d271f;cursor:pointer;font-weight:650;font-size:13px}.tab.active{background:#2b261f;color:#fff}
+.calendarTop{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:14px}.calendarTop .title{font-size:22px;font-weight:750}
+.cal{display:grid;grid-template-columns:repeat(7,1fr);gap:8px}.dow{font-size:12px;color:#7e7366;text-align:center;font-weight:700}.day{min-height:128px;background:#fff;border:1px solid #e2d8c9;border-radius:16px;padding:8px;position:relative;overflow:hidden}.day.weekend{background:#f7efe4}.day.today{outline:2px solid var(--gold)}.dateNo{font-size:12px;color:#6e6256;font-weight:800}.tag{display:block;margin-top:5px;padding:4px 6px;border-radius:9px;font-size:11px;line-height:1.18;border:1px solid rgba(0,0,0,.06);white-space:normal}.tag.ph{background:#ffe8d6;color:#8a3b18}.tag.leave{background:#ffe3df;color:#8b2f25}.tag.wfh{background:#dfefff;color:#25537c}.tag.wfhchange{background:#cfeedd;color:#1f6844}.tag.wfhspecial{background:#eee6ff;color:#4b2f78}.tag.bday{background:#f6e6ff;color:#643283}.tag.info{background:#e8f5ee;color:#226044}.tag.warn{background:#fff3c9;color:#76540e}.tag.blockout{background:#2b261f;color:#f6dfad}.list{display:flex;flex-direction:column;gap:9px}.item{border:1px solid #e2d8c9;border-radius:16px;padding:12px;background:#fff}.item b{display:block;margin-bottom:4px}.status{font-size:11px;border-radius:999px;padding:3px 8px;display:inline-block;margin-top:5px}.pending{background:#fff3c9;color:#78560b}.approved{background:#e5f5ec;color:#266041}.rejected{background:#ffe0dd;color:#8a2d22}.table{width:100%;border-collapse:collapse;font-size:13px}.table th,.table td{border-bottom:1px solid #eadfce;text-align:left;padding:9px}.table th{color:#64594d;font-size:12px}.notice{border-left:4px solid var(--gold);background:#fff7e8;padding:10px 12px;border-radius:12px;margin:10px 0;color:#574736;font-size:13px}
+.loginBox{max-width:430px;margin:70px auto}.logo{font-family:Georgia,serif;font-size:28px;letter-spacing:.6px}.kpi{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}.kpi .box{background:#fff;border:1px solid #e2d8c9;border-radius:16px;padding:12px}.kpi .num{font-size:20px;font-weight:800}.smallText{font-size:11px;color:#75695c}
+@media(max-width:900px){.grid{grid-template-columns:1fr}.cal{gap:5px}.day{min-height:118px;padding:6px}.calendarTop{flex-direction:column;align-items:stretch}.kpi{grid-template-columns:repeat(2,1fr)}header{padding:17px;align-items:flex-start;flex-direction:column}}
+
+#memberTable{overflow-x:auto;overflow-y:hidden;padding-bottom:4px}
+#memberTable .table{min-width:520px}
+#memberTable .table th:last-child,#memberTable .table td:last-child{width:72px;min-width:72px;text-align:right}
+#memberTable .table .danger.small{white-space:nowrap}
+
+
+.adminStaffBalances{display:flex;flex-direction:column;gap:10px;margin-bottom:12px}
+.staffBalanceCard{border:1px solid #e2d8c9;border-radius:16px;background:#fff;padding:10px}
+.staffBalanceName{font-weight:800;margin-bottom:8px;font-size:13px}
+.staffBalanceGrid{display:grid;grid-template-columns:repeat(5,1fr);gap:7px}
+.staffBalanceBox{border:1px solid #e2d8c9;border-radius:14px;padding:8px;background:#fffdf9}
+.staffBalanceBox .num{font-size:18px;font-weight:800}
+.staffBalanceBox .lbl{font-size:10px;color:#75695c;line-height:1.2}
+
+
+#memberTablePanel{overflow-x:auto;margin-top:8px;padding-bottom:6px}
+#memberTablePanel .table{min-width:620px}
+#memberTablePanel .table td:last-child{white-space:nowrap}
+
+
+.adminMCBox{margin-top:18px;border-top:1px solid #eadfce;padding-top:14px}
+.adminMCBox .adminMCDateGrid{display:grid;grid-template-columns:1fr;gap:8px}
+.adminMCBox .adminMCQuickBtns{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:10px}
+.adminMCBox .adminMCQuickBtns button{width:100%}
+.adminMCBox select,.adminMCBox input,.adminMCBox textarea{width:100%}
+
+
+.mcDateGrid{display:grid;grid-template-columns:1fr;gap:8px}
+.mcQuickBtns{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:10px}
+.mcQuickBtns button{width:100%;white-space:normal}
+.adminMCBox .adminMCQuickBtns{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:10px}
+.adminMCBox .adminMCQuickBtns button{width:100%;white-space:normal}
+
+
+.leaveQuickBtns{display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin-top:8px}
+.leaveQuickBtns button{width:100%;white-space:normal}
+
+
+#memberCard{display:none!important}
+#adminTables{grid-template-columns:1fr!important}
+
+
+.leaveReminderBox{border-left:4px solid #b99355;background:#fff7e8;padding:10px 12px;border-radius:12px;margin:10px 0;color:#574736;font-size:13px;line-height:1.45}
+.leaveReminderBox b{color:#2b261f}
+.leaveReminderBox.warning{background:#fff0df;border-left-color:#b85042}
+
+
+.tab.pendingAlert{
+  background:#b85042!important;
+  color:#fff!important;
+  box-shadow:0 0 0 3px rgba(184,80,66,.16);
+}
+.tab.pendingAlert::after{
+  content:'';
+  display:inline-block;
+  width:7px;
+  height:7px;
+  background:#fff;
+  border-radius:999px;
+  margin-left:6px;
+  vertical-align:middle;
+}
+
+
+/* Admin staff balance layout fix */
+#adminStaffBalances .staffBalanceCard{
+  overflow:hidden;
+}
+#adminStaffBalances .staffBalanceGrid{
+  display:grid!important;
+  grid-template-columns:repeat(2,minmax(0,1fr))!important;
+  gap:8px!important;
+}
+#adminStaffBalances .staffBalanceBox{
+  min-width:0;
+  padding:9px 8px;
+}
+#adminStaffBalances .staffBalanceBox .num{
+  font-size:18px;
+  line-height:1.1;
+}
+#adminStaffBalances .staffBalanceBox .lbl{
+  font-size:10px;
+  line-height:1.2;
+  word-break:normal;
+}
+
+
+/* Role visibility safety fix */
+.adminOnly{display:none!important}
+body.isAdmin .adminOnly{display:inline-flex!important}
+body.isAdmin section.adminOnly{display:block!important}
+body.isAdmin div.adminOnly{display:block!important}
+body.isAdmin span.adminOnly{display:inline-flex!important}
+body.isStaff .adminOnly{display:none!important}
+
+
+.tag.remotecover{
+  background:#efe7ff;
+  color:#4b2f78;
+  border-color:#d8c6ff;
+}
+
+.tag.service{
+  background:#fff6d8;
+  color:#7a5612;
+  border-color:#e8d19a;
+}
+.tag.mcwfh{
+  background:#e9f1ff;
+  color:#2f5f91;
+  border-color:#c9dcf6;
+}
+
+.tag.coverswap{
+  background:#eaf7ff;
+  color:#245b78;
+  border-color:#b8dff1;
+}
+
+.tag.worktime{
+  background:#eaf2ff;
+  color:#2f5686;
+  border-color:#bfd3ef;
+}
+
+
+.serviceMonthLabel{
+  border-left-color:#b99355;
+  background:#fff9e8;
+}
+.serviceMonthLabel b{color:#2b261f}
+
+
+.summaryTableWrap{overflow-x:auto;margin-top:8px;padding-bottom:6px}
+.summaryTableWrap .table{min-width:1320px}
+.summaryTableWrap .table th,.summaryTableWrap .table td{white-space:nowrap;vertical-align:top}
+.summaryControls{display:flex;gap:8px;align-items:flex-end;margin:8px 0 12px}
+.summaryControls>*{flex:1}
+.summaryControls button{flex:0 0 auto}
+.wfhNeedReassign{background:#fff0df;color:#8a2d22;border-color:#efc7bd}
+
+.phEditorBox{margin-top:18px;border-top:1px solid #eadfce;padding-top:14px}
+.phEditorGrid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.phList{display:flex;flex-direction:column;gap:8px;margin-top:10px;max-height:320px;overflow:auto;padding-right:4px}
+.phItem{border:1px solid #e2d8c9;border-radius:14px;background:#fff;padding:10px;display:flex;justify-content:space-between;gap:8px;align-items:flex-start}
+.phItem b{display:block;font-size:13px}.phItem .muted{font-size:12px}
+@media(max-width:900px){.phEditorGrid{grid-template-columns:1fr}}
+
+
+.mcClaimControls{display:flex;gap:8px;align-items:flex-end;margin:8px 0 12px}
+.mcClaimControls>*{flex:1}
+.mcClaimControls button{flex:0 0 auto}
+.mcClaimTableWrap{overflow-x:auto;margin-top:8px;padding-bottom:6px}
+.mcClaimTableWrap .table{min-width:860px}
+.mcClaimTableWrap .table th,.mcClaimTableWrap .table td{white-space:nowrap;vertical-align:top}
+.mcPaid{background:#e5f5ec;color:#266041}
+.mcUnpaid{background:#fff3c9;color:#78560b}
+
+
+.wpReminderBox{border-left:4px solid #b85042;background:#fff0df;padding:10px 12px;border-radius:12px;margin:10px 0;color:#574736;font-size:13px;line-height:1.45}
+.wpReminderBox b{color:#2b261f}
+.autoEntitlementHint{font-size:12px;color:#75695c;margin:6px 0 2px;line-height:1.35}
+.statusBadge{font-size:11px;border-radius:999px;padding:3px 8px;display:inline-block;background:#e5f5ec;color:#266041}
+.statusBadge.terminated{background:#ffe0dd;color:#8a2d22}
+</style>
+</head>
+<body>
+<header>
+  <div><div class="logo">Staff Planner</div><div class="muted" style="color:#d8c8ad">Leave · WFH · Birthday Off · Singapore PH</div></div>
+  <div class="row" style="flex:0 0 auto">
+    <span id="who" class="pill">Not logged in</span>
+    <button id="logoutBtn" class="secondary small hide" onclick="logout()">Logout</button>
+  </div>
+</header>
+
+<div id="login" class="loginBox card">
+  <h2>Login</h2>
+  <div class="notice">Please login using your assigned User ID and secure password.</div>
+  <label>User ID</label><input id="loginUser" placeholder="admin / ci / zww">
+  <label>Password</label><input id="loginPass" type="password" placeholder="Enter password">
+  <button class="gold" style="width:100%;margin-top:14px" onclick="login()">Login</button>
+</div>
+
+<div id="app" class="wrap hide">
+  <div class="grid">
+    <aside class="card">
+      <h2 id="sideTitle">Planner</h2>
+      <div class="tabs">
+        <span class="tab active" data-tab="calendar" onclick="showTab('calendar')">Calendar</span>
+        <span class="tab" data-tab="apply" onclick="showTab('apply')">Apply Leave</span>
+        <span class="tab" data-tab="mc" onclick="showTab('mc')">MC Claim</span>
+        <span class="tab adminOnly" data-tab="adminmcclaims" onclick="showTab('adminmcclaims')">Claims Payment</span>
+        <span class="tab" data-tab="submitclaim" onclick="showTab('submitclaim')">Submit Claim</span>
+        <span class="tab" data-tab="worktime" onclick="showTab('worktime')">Work Time Change</span>
+        <span class="tab" data-tab="coverswap" onclick="showTab('coverswap')">Cover Swap</span>
+        <span class="tab" data-tab="wfhchange" onclick="showTab('wfhchange')">WFH Change</span>
+        <span class="tab adminOnly" data-tab="members" onclick="showTab('members')">Members</span>
+        <span class="tab adminOnly" data-tab="approvals" onclick="showTab('approvals')">Approvals</span>
+        <span class="tab adminOnly" data-tab="summary" onclick="showTab('summary')">Summary</span>
+        <span class="tab adminOnly" data-tab="buddy" onclick="showTab('buddy')">Buddy System</span>
+        <span class="tab adminOnly" data-tab="blockout" onclick="showTab('blockout')">Block Out Dates</span>
+        <span class="tab" data-tab="password" onclick="showTab('password')">Change Password</span>
+        <span class="tab adminOnly" data-tab="settings" onclick="showTab('settings')">Settings</span>
+      </div>
+
+      <section id="panel-calendar">
+        <div id="leaveReminderBox" class="leaveReminderBox hide"></div>
+        
+<div id="serviceMonthLabel" class="notice hide" style="margin-bottom:10px"></div>
+<div id="adminSummary" class="notice" style="margin-bottom:10px"></div>
+<div id="wpReminderBox" class="wpReminderBox hide"></div>
+
+<div id="adminStaffBalances" class="adminStaffBalances hide"></div>
+        <div id="kpiStaffName" class="notice" style="margin-top:0;margin-bottom:10px">Balance shown for: -</div>
+        <div class="kpi">
+          <div class="box"><div class="num" id="kAL">0</div><div class="smallText">AL Balance</div></div>
+          <div class="box"><div class="num" id="kMC">14</div><div class="smallText">MC Balance</div></div>
+          <div class="box"><div class="num" id="kCL">2</div><div class="smallText">Compassionate</div></div>
+          <div class="box"><div class="num" id="kPend">0</div><div class="smallText">Pending</div></div>
+          <div class="box"><div class="num" id="kCCL">0</div><div class="smallText">CCL Bal</div></div>
+          <div class="box"><div class="num" id="kUrgent">0</div><div class="smallText">Urgent Leave Taken</div></div>
+        </div>
+        <div class="notice">Calendar short code example: <b>CI - AL</b>, <b>ZWW - AM</b>, <b>YLC - WFH</b>.</div>
+      </section>
+
+      <section id="panel-apply" class="hide">
+        <h3>Apply Leave</h3>
+        <label>Staff</label><select id="applyStaff"></select>
+        <label>Type</label><select id="applyType">
+          <option value="AL">Annual Leave - Full Day</option><option value="AM">Morning Leave</option><option value="PM">Afternoon Leave</option>
+          <option value="EL">Emergency Leave</option><option value="CL">Compassionate Leave</option><option value="CCL">Childcare Leave</option><option value="CCLAM">Childcare AM Leave</option><option value="CCLPM">Childcare PM Leave</option><option value="UPL">Unpaid Leave</option>
+        </select>
+        <div class="row"><div><label>From</label><input id="fromDate" type="date"></div><div><label>To</label><input id="toDate" type="date"></div></div>
+        <label style="margin-top:10px">Quick Duration</label>
+        <div class="leaveQuickBtns">
+          <button class="secondary small" type="button" onclick="setLeaveDays(1)">1 Day</button>
+          <button class="secondary small" type="button" onclick="setLeaveDays(2)">2 Days</button>
+          <button class="secondary small" type="button" onclick="setLeaveDays(3)">3 Days</button>
+          <button class="secondary small" type="button" onclick="setLeaveDays(4)">4 Days</button>
+          <button class="secondary small" type="button" onclick="setLeaveDays(5)">5 Days</button>
+        </div>
+        <label>Reason / Special Request <span style="color:#b85042">*</span></label><textarea id="reason" placeholder="Reason is compulsory for all leave submissions"></textarea>
+        <button class="gold" style="width:100%;margin-top:12px" onclick="submitRequest()">Submit Application</button>
+        <div id="applyMsg" class="notice hide"></div>
+      </section>
+
+      <section id="panel-mc" class="hide">
+        <h3>Submit MC Claim</h3>
+        <label>Staff</label><select id="mcStaff" onchange="updateMCPreview();renderStaffMCClaimStatus()"></select>
+        <div class="mcDateGrid">
+          <div>
+            <label>MC From</label>
+            <input id="mcDate" type="date" onchange="syncMCTo();updateMCPreview()">
+          </div>
+          <div>
+            <label>MC To</label>
+            <input id="mcToDate" type="date" onchange="updateMCPreview()">
+          </div>
+        </div>
+
+        <div class="mcQuickBtns">
+          <button class="secondary small" type="button" onclick="setMCDays(1)">1 Day</button>
+          <button class="secondary small" type="button" onclick="setMCDays(2)">2 Days</button>
+          <button class="secondary small" type="button" onclick="setMCDays(3)">3 Days</button>
+        </div>
+
+        <div id="mcPreview" class="notice" style="margin-top:10px">Select MC date to preview deduction.</div>
+
+        <div id="mcWFHOptions" class="notice hide" style="margin-top:10px"></div>
+
+        <label>Consultation Fee Amount</label><input id="mcConsultFee" type="number" min="0" step="0.01" placeholder="e.g. 25.00">
+
+        <label>Upload / Scan MC</label><input id="mcFile" type="file" accept="image/*,.pdf" capture="environment">
+        <label>Remarks</label><textarea id="mcRemarks"></textarea>
+        <button class="gold" style="width:100%;margin-top:12px" onclick="submitMC()">Submit MC</button>
+
+        <h3 style="margin-top:18px">My MC Claim Payment Status</h3>
+        <div id="staffMCClaimStatusList" class="list"></div>
+
+        
+      </section>
+
+      <section id="panel-adminmcclaims" class="hide adminOnly">
+        <h3>Claims Payment</h3>
+        <div class="notice">Accounts can filter payment claims by month and click Pay after payment is processed. Unpaid claims will remain here until paid. This section includes MC consultation fees, staff submitted claims, and service milestone payments.</div>
+        <div class="mcClaimControls">
+          <div>
+            <label>Payment Month</label>
+            <input id="mcClaimMonth" type="month" onchange="renderMCClaims()">
+          </div>
+          <button class="secondary small" type="button" onclick="setMCClaimMonthCurrent()">Current Month</button>
+        </div>
+        <div id="adminMCClaimList" class="mcClaimTableWrap"></div>
+      </section>
+
+      <section id="panel-submitclaim" class="hide">
+        <h3>Submit Claim</h3>
+        <div class="notice">Submit claim for Transport, Travel Insurance, or Others. Remarks are compulsory to indicate the claim reason.</div>
+        <label>Staff</label><select id="claimStaff" onchange="renderStaffGeneralClaimStatus()"></select>
+        <label>Claim Type</label>
+        <select id="claimType" onchange="toggleClaimOtherField()">
+          <option value="Transport">Transport</option>
+          <option value="Travel Insurance">Travel Insurance</option>
+          <option value="Others">Others</option>
+        </select>
+        <div id="claimOtherWrap" class="hide">
+          <label>Indicate Others Claim Type</label><input id="claimOtherType" placeholder="e.g. Parking, courier, office purchase">
+        </div>
+        <label>Claim Date</label><input id="claimDate" type="date">
+        <label>Amount</label><input id="claimAmount" type="number" min="0" step="0.01" placeholder="e.g. 25.00">
+        <label>Upload Receipt</label><input id="claimReceipt" type="file" accept="image/*,.pdf" capture="environment">
+        <label>Remarks / Claim Reason <span style="color:#b85042">*</span></label><textarea id="claimRemarks" required placeholder="Please indicate the reason for this claim"></textarea>
+        <button class="gold" style="width:100%;margin-top:12px" onclick="submitGeneralClaim()">Submit Claim</button>
+        <h3 style="margin-top:18px">My Claim Payment Status</h3>
+        <div id="staffGeneralClaimStatusList" class="list"></div>
+      </section>
+
+      <section id="panel-worktime" class="hide">
+        <h3>Change of Work Time Request</h3>
+        <div class="notice">For staff who need to come later or leave earlier. All requests require Administrator approval.</div>
+        <label>Staff</label><select id="workTimeStaff"></select>
+        <label>Date</label><input id="workTimeDate" type="date">
+        <div class="row">
+          <div><label>Requested Start Time</label><input id="workTimeStart" type="time"></div>
+          <div><label>Requested End Time</label><input id="workTimeEnd" type="time"></div>
+        </div>
+        <label>Reason <span style="color:#b85042">*</span></label><textarea id="workTimeReason" required placeholder="e.g. Need to leave early for appointment / come later due to family matter"></textarea>
+        <button class="gold" style="width:100%;margin-top:12px" onclick="submitWorkTimeChange()">Submit Work Time Change</button>
+        <h3 style="margin-top:18px">Work Time Change Records</h3>
+        <div id="workTimeList" class="list"></div>
+      </section>
+
+
+
+      <section id="panel-coverswap" class="hide">
+        <h3>Cover Swap Request</h3>
+        <div class="notice">For Local CSO team only. If you are assigned to cover another Local CSO, you may request another available Local CSO to take over. The receiving CSO must approve before the Buddy System count changes.</div>
+        <div id="coverSwapFormBox">
+          <label>Your Covering Assignment</label><select id="coverSwapAssignment" onchange="refreshCoverSwapTargetOptions()"></select>
+          <label>Swap To Local CSO</label><select id="coverSwapTarget"></select>
+          <label>Reason</label><textarea id="coverSwapReason" placeholder="e.g. Need to handle appointment / already covering another urgent task"></textarea>
+          <button class="gold" style="width:100%;margin-top:12px" onclick="submitCoverSwapRequest()">Submit Cover Swap Request</button>
+        </div>
+        <h3 style="margin-top:18px">Cover Swap Records</h3>
+        <div id="coverSwapList" class="list"></div>
+      </section>
+
+      <section id="panel-wfhchange" class="hide">
+        <h3>WFH Change Request</h3>
+        <label>Staff</label><select id="wfhStaff"></select>
+        <label>Request Type</label>
+        <select id="wfhRequestType" onchange="toggleWFHRequestType()">
+          <option value="swap">Swap WFH with same type staff</option>
+          <option value="special">Special approval WFH without swap</option>
+          <option value="internalSwap">Swap with same type staff (Internally)</option>
+        </select>
+        <div id="wfhOriginalWrap">
+          <label>Original WFH Date</label><input id="wfhOriginalDate" type="date">
+        </div>
+        <label id="wfhNewDateLabel">Requested New WFH Date</label><input id="wfhNewDate" type="date">
+        <label>Reason</label><textarea id="wfhReason" placeholder="Reason for changing WFH date"></textarea>
+        <button class="gold" style="width:100%;margin-top:12px" onclick="submitWFHChange()">Submit WFH Change Request</button>
+
+        <div class="adminOnly">
+          <h3 style="margin-top:18px">Admin Manual WFH Override</h3>
+          <label>Override Date</label><input id="adminWFHDate" type="date">
+          <label>Assign Staff</label><select id="adminWFHStaff"></select>
+          <label>Remarks</label><input id="adminWFHReason" placeholder="e.g. approved swap, operation adjustment">
+          <button class="gold" style="width:100%;margin-top:12px" onclick="adminSetWFH()">Set / Change WFH</button>
+          <div style="margin-top:14px;border-top:1px solid #eadfce;padding-top:12px">
+            <h3>Admin Cancel WFH</h3>
+            <label>WFH Date</label><input id="cancelWFHDate" type="date">
+            <label>Cancel Staff WFH</label><select id="cancelWFHStaff"></select>
+            <label>Reason</label><input id="cancelWFHReason" placeholder="e.g. manpower balancing">
+            <button class="danger" style="width:100%;margin-top:12px" onclick="adminCancelWFH()">Cancel Staff WFH</button>
+          </div>
+
+        </div>
+
+        <h3 style="margin-top:18px">WFH Change Records</h3>
+        <div id="wfhChangeList" class="list"></div>
+      </section>
+
+      <section id="panel-members" class="hide">
+        <h3>Add Member</h3>
+        <label>Name</label><input id="mName">
+        <div class="row"><div><label>Initial</label><input id="mInitial" placeholder="CI"></div><div><label>Type</label><select id="mType"><option>CSO</option><option>Admin</option><option>Administrator</option></select></div></div>
+        <label>Date Join</label><input id="mJoin" type="date" onchange="updateAutoALPreview()">
+        <label>Confirmation Date</label><input id="mConfirmDate" type="date" onchange="updateAutoALPreview()">
+        <label>Birthday</label><input id="mBirthday" type="date">
+
+        <h3 style="margin-top:16px">Children Details</h3>
+        <div class="row"><div><label>Child 1 Name</label><input id="mChild1Name"></div><div><label>Child 1 DOB</label><input id="mChild1DOB" type="date"></div></div>
+        <div class="row"><div><label>Child 2 Name</label><input id="mChild2Name"></div><div><label>Child 2 DOB</label><input id="mChild2DOB" type="date"></div></div>
+        <div class="row"><div><label>Child 3 Name</label><input id="mChild3Name"></div><div><label>Child 3 DOB</label><input id="mChild3DOB" type="date"></div></div>
+
+        <div class="row"><div><label>Work Week</label><select id="mWeek"><option value="5">5 day</option><option value="6">6 day</option></select></div><div><label>Packer Role</label><select id="mPacker"><option value="No">No</option><option value="Main">Main</option><option value="Backup">Backup</option></select></div></div>
+        <label>Work Location</label><select id="mLocation" onchange="updateAutoALPreview()"><option value="Local">Local</option><option value="Remote">Remote</option></select>
+        <label>Buddy Type</label><select id="mBuddyType"><option value="Local CSO">Local CSO</option><option value="Local Admin">Local Admin (No Covering Rule)</option><option value="Remote Lead">Remote Lead</option><option value="Remote CSO">Remote CSO</option></select>
+        <label>Calendar View Permission</label><select id="mCalendarView"><option value="All">All Staff</option><option value="Remote">Remote Only</option><option value="Local">Local Only</option></select>
+        <label>Staff Annual Leave Entitlement Base (leave blank to auto-calculate by Location)</label><div id="autoALPreview" class="autoEntitlementHint">Auto entitlement: -</div><input id="mAL" type="number" min="0" step="0.5" placeholder="Blank = default base entitlement" oninput="updateAutoALPreview()">
+        <label>Staff Status</label><select id="mStatus"><option value="Active">Active</option><option value="Terminated">Terminated</option></select>
+        <label>Termination / Resignation Date</label><input id="mTerminationDate" type="date" onchange="updateAutoALPreview()">
+        <label>WP/SP Expiry Date</label><input id="mWpExpiry" type="date">
+        <button id="memberSaveBtn" class="gold" style="width:100%;margin-top:12px" onclick="addMember()">Add Member</button>
+        <button id="memberCancelEditBtn" class="secondary hide" style="width:100%;margin-top:8px" onclick="cancelMemberEdit()">Cancel Edit / Add New Staff</button>
+        <h3 style="margin-top:18px">Member List</h3>
+        <div class="notice">Use Edit to update staff profile. Use Delete only if you want to remove the staff.</div>
+        <div id="memberTablePanel"></div>
+      </section>
+
+      <section id="panel-approvals" class="hide">
+        <h3>Pending Approval</h3><div id="approvalList" class="list"></div>
+      </section>
+
+      <section id="panel-summary" class="hide">
+        <h3>Attendance Summary</h3>
+        <div class="notice">Admin view only. Shows each staff's leave entitlement, quarterly allocation, and leave taken for quick attendance analysis.</div>
+        <div class="summaryControls">
+          <div>
+            <label>Year</label>
+            <select id="summaryYear" onchange="renderAttendanceSummary()"></select>
+          </div>
+          <button class="secondary small" type="button" onclick="exportAttendanceSummaryCSV()">Export CSV</button>
+        </div>
+        <div id="attendanceSummaryTable" class="summaryTableWrap"></div>
+      </section>
+
+
+      
+<section id="panel-buddy" class="hide">
+  <h3>Buddy System</h3>
+
+  <div class="notice">
+    <b>Local Buddy Coverage</b><br>
+    When a Local CSO is on Leave / MC, another available Local CSO will be assigned fairly.<br><br>
+
+    <b>Remote Escalation Coverage</b><br>
+    Remote CSO absence will first be covered by the <b>Remote Lead</b>. If Remote Lead is absent, a Local CSO will be assigned as Remote Cover. Local CSO coverage is 1-to-1 first; 1-to-2 is used only when there are not enough Local CSO available.
+  </div>
+
+  <div class="notice adminOnly">
+    <b>Admin Manual Cover Change</b><br>
+    Use this when Administrator needs to directly change the assigned covering staff for manpower balancing.
+    <label>Cover Date</label><input id="adminCoverDate" type="date" onchange="refreshAdminCoverChangeOptions()">
+    <label>Absent Staff</label><select id="adminCoverAbsent" onchange="refreshAdminCoverChangeOptions()"></select>
+    <div id="adminCoverCurrent" class="muted" style="margin-top:8px">Current cover: -</div>
+    <label>Change Cover To</label><select id="adminCoverNew"></select>
+    <label>Reason</label><input id="adminCoverReason" placeholder="e.g. manpower balancing / fairer distribution">
+    <button class="gold" style="width:100%;margin-top:12px" onclick="adminManualCoverChange()">Change Cover Staff</button>
+  </div>
+
+  <div style="display:flex;gap:8px;margin:12px 0;">
+    <button class="secondary small" onclick="changeBuddyWeek(-1)">← Previous Week</button>
+    <button class="secondary small" onclick="changeBuddyWeek(1)">Next Week →</button>
+  </div>
+
+  <div id="buddyWeekLabel" class="muted" style="margin-bottom:12px"></div>
+
+  <div id="buddyList" class="list"></div>
+</section>
+
+
+      <section id="panel-blockout" class="hide">
+        <h3>Block Out Date</h3>
+        <label>Block Out Date</label><input id="blockDate" type="date">
+        <label>Event / Reason</label><input id="blockReason" placeholder="e.g. Company event, roadshow, peak operation day">
+        <button class="gold" style="width:100%;margin-top:12px" onclick="addBlockout()">Add Block Out Date</button>
+        <div class="notice">When a date is blocked, staff leave applications for that date will require Admin approval. Staff can still submit emergency/special requests.</div>
+        <h3 style="margin-top:16px">Blocked Dates</h3>
+        <div id="blockoutList" class="list"></div>
+      </section>
+
+
+      <section id="panel-password" class="hide">
+        <h3>Change Password</h3>
+        <div class="notice">For security, please key in your current password before setting a new password.</div>
+        <label>Current Password</label><input id="oldPassword" type="password">
+        <label>New Password</label><input id="newPassword" type="password">
+        <label>Confirm New Password</label><input id="confirmPassword" type="password">
+        <button class="gold" style="width:100%;margin-top:12px" onclick="changePassword()">Update Password</button>
+      </section>
+
+      <section id="panel-settings" class="hide">
+        <h3>Settings</h3>
+        <div class="notice">AL/MC entitlement is auto-calculated by staff Work Location, Confirmation Date and Termination/Resignation Date. Local: AL 14→21, MC 14. Remote: AL 10→18, MC 10. AL increases by 1 day on the first day of each year and is prorated for confirmation/termination year.</div>
+        <label>Default Annual Leave Entitlement</label><input id="setAL" type="number">
+        <label>Calendar View Filter</label><select id="setCalendarView"><option value="All">All Staff</option><option value="Remote">Remote Only</option><option value="Local">Local Only</option></select>
+        <label>WFH Rotation Sequence (2 staff per day, use + between staff)</label><input id="setWFH" placeholder="TPH+TKT,CI+TLH,ZWW+TLK">
+        <label>Admin Special Remarks</label><textarea id="setRemarks"></textarea>
+        <button class="gold" style="width:100%;margin-top:12px" onclick="saveSettings()">Save Settings</button>
+
+        <div class="phEditorBox">
+          <h3>Public Holiday Settings</h3>
+          <div class="notice">Admin can add future Singapore Public Holidays here when MOM releases the new year dates. These dates will be used for calendar display and leave working-day calculation.</div>
+          <label>View / Edit Year</label><select id="phYear" onchange="renderPublicHolidayEditor()"></select>
+          <div class="phEditorGrid">
+            <div><label>Public Holiday Date</label><input id="phDate" type="date"></div>
+            <div><label>Holiday Name</label><input id="phName" placeholder="e.g. New Year's Day"></div>
+          </div>
+          <button class="gold" style="width:100%;margin-top:10px" type="button" onclick="addPublicHoliday()">Add / Update Public Holiday</button>
+          <div id="phList" class="phList"></div>
+        </div>
+
+        <button class="secondary" style="width:100%;margin-top:8px" onclick="exportData()">Export Backup JSON</button>
+      </section>
+    </aside>
+
+    <main class="card">
+      <div class="calendarTop">
+        <button class="secondary" onclick="moveMonth(-1)">← Previous</button>
+        <div class="title" id="monthTitle"></div>
+        <button class="secondary" onclick="moveMonth(1)">Next →</button>
+      </div>
+      <div id="calendar" class="cal"></div>
+
+      <div style="margin-top:18px" class="grid" id="adminTables">
+        <div class="card" style="box-shadow:none" id="memberCard">
+          <h3>Members</h3><div id="memberTable"></div>
+        </div>
+        <div class="card" style="box-shadow:none">
+          <h3>Staff Records</h3><div class="muted" style="margin-bottom:9px">Pending approvals will show at the top.</div><div id="recordsList" class="list"></div>
+        </div>
+      </div>
+    </main>
+  </div>
+</div>
+
+<script>
+const DEFAULT_PUBLIC_HOLIDAYS = {
+  '2026':[
+    ['2026-01-01',"New Year's Day"],['2026-02-17','Chinese New Year'],['2026-02-18','Chinese New Year'],
+    ['2026-03-21','Hari Raya Puasa'],['2026-04-03','Good Friday'],['2026-05-01','Labour Day'],
+    ['2026-05-27','Hari Raya Haji'],['2026-05-31','Vesak Day'],['2026-06-01','Vesak Day Holiday'],
+    ['2026-08-09','National Day'],['2026-08-10','National Day Holiday'],['2026-11-08','Deepavali'],
+    ['2026-11-09','Deepavali Holiday'],['2026-12-25','Christmas Day']
+  ]
+};
+function cloneDefaultPublicHolidays(){return JSON.parse(JSON.stringify(DEFAULT_PUBLIC_HOLIDAYS));}
+const $=id=>document.getElementById(id);
+const fmt=d=>new Date(d+'T00:00:00');
+const iso=d=>`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+let currentUser=null, viewDate=new Date();
+const defaults={
+ settings:{defaultAL:14,calendarView:'All',wfhStartIndex:8,wfhSequence:[['TPH','TKT'],['CI','TLH'],['ZWW','TLK'],['TSH','WPY'],['YLC','TLJ'],['CI','TLH'],['ZWW','TLK'],['TSH','WPY'],['YLC','TLJ'],['TPH','TKT'],['ZWW','TLK'],['TSH','WPY'],['YLC','TLJ'],['TPH','TKT'],['CI','TLH'],['ZWW','WPY'],['TSH','TLJ'],['YLC','TKT'],['TPH','TLH'],['CI','TLK'],['YLC','TLJ'],['TPH','TKT'],['CI','TLH'],['ZWW','TLK'],['TSH','WPY']],remarks:'Special remarks will show here.'},
+ 
+ members:[
+  {name:'Irene Teo',initial:'TSH',type:'Admin',join:'2007-01-09',birthday:'1977-06-24',week:'5',packer:'No',al:22,password:'123'},
+  {name:'Summer Tar',initial:'TPH',type:'CSO',join:'2007-06-11',birthday:'1983-07-07',week:'5',packer:'No',al:22,password:'123'},
+  {name:'Yap Li Choo',initial:'YLC',type:'CSO',join:'2009-09-28',birthday:'1974-03-28',week:'5',packer:'No',al:22,password:'123'},
+  {name:'Ivy Chan',initial:'CI',type:'CSO',join:'2011-06-27',birthday:'1980-08-01',week:'5',packer:'No',al:22,password:'123'},
+  {name:'Vicky Zhang',initial:'ZWW',type:'CSO',join:'2023-02-01',birthday:'1985-03-09',week:'5',packer:'No',al:18,password:'123'},
+  {name:'Renee Lee',initial:'LSF',type:'Administrator',join:'2009-11-02',birthday:'1973-07-20',week:'5',packer:'No',al:22,password:'123'},
+  {name:'Deannie Tan',initial:'TKT',type:'CSO',join:'2009-04-02',birthday:'1987-11-10',week:'5',packer:'Backup',al:22,password:'123'},
+  {name:'Nicole Tang',initial:'TLJ',type:'CSO',join:'2016-04-27',birthday:'1996-01-13',week:'6',packer:'No',al:20,password:'123'},
+  {name:'Vanessa T',initial:'TLH',type:'CSO',join:'2016-08-24',birthday:'1994-01-09',week:'6',packer:'Main',al:20,password:'123'},
+  {name:'Alice Wong',initial:'WPY',type:'CSO',join:'2017-02-23',birthday:'1997-11-04',week:'6',packer:'No',al:19,password:'123'},
+  {name:'Reachel Tan',initial:'TLK',type:'CSO',join:'2018-03-05',birthday:'1998-03-25',week:'6',packer:'Main',al:18,password:'123'},
+  {name:'Wong Ciyin',initial:'WCY',type:'CSO',join:'2025-12-10',birthday:'1999-01-11',week:'5',packer:'No',al:10,password:'123'}
+ ],
+
+ records:[],
+ blockouts:[],
+ wfhOverrides:[],
+ wfhRemoved:[],
+ wfhRequests:[],
+ workTimeRequests:[],
+ mcClaims:[],
+ generalClaims:[],
+ servicePaymentsPaid:[],
+ coverSwapRequests:[],
+ adminCoverOverrides:[],
+ publicHolidays:cloneDefaultPublicHolidays()
+};
+function normalizeData(d){
+ if(!d.settings)d.settings={defaultAL:14,wfhSequence:['TPH+TKT','CI+TLH','ZWW+TLK'],remarks:'',calendarView:'All'};
+ if(!d.settings.calendarView)d.settings.calendarView='All';
+ if(!d.settings.adminPassword)d.settings.adminPassword='admin123';
+ if(!d.settings.wfhSequence)d.settings.wfhSequence=['TPH+TKT','CI+TLH','ZWW+TLK'];
+ if(d.members)d.members.forEach(m=>{if(!m.location)m.location='Local'; if(!m.calendarView)m.calendarView='All'; if(!m.children)m.children=[]; if(!m.buddyType)m.buddyType=(m.initial==='TSH'?'Remote Lead':((m.location||'Local')==='Remote'?'Remote CSO':'Local CSO')); if(!m.status)m.status='Active'; if(m.terminated===true)m.status='Terminated'; if(m.wpExpiry===undefined)m.wpExpiry=''; if(m.confirmDate===undefined)m.confirmDate=''; if(m.terminationDate===undefined)m.terminationDate=''; if(m.initial==='LSF'||/renee/i.test(m.name||'')){m.type='Administrator'; m.location='Local'; m.buddyType='Administrator';}});
+ if(d.members)d.members.forEach(m=>{if(m.mustChangePassword===undefined)m.mustChangePassword=false;});
+ if(!d.records)d.records=[];
+ if(!d.blockouts)d.blockouts=[];
+ if(!d.wfhRequests)d.wfhRequests=[];
+ if(!d.workTimeRequests)d.workTimeRequests=[];
+ if(!d.mcClaims)d.mcClaims=[];
+ if(!d.generalClaims)d.generalClaims=[];
+ if(!d.servicePaymentsPaid)d.servicePaymentsPaid=[];
+ if(!d.coverSwapRequests)d.coverSwapRequests=[];
+ if(!d.adminCoverOverrides)d.adminCoverOverrides=[];
+ if(!d.publicHolidays)d.publicHolidays=cloneDefaultPublicHolidays();
+ if(Array.isArray(d.publicHolidays)){
+   const converted={};
+   d.publicHolidays.forEach(p=>{
+     const yr=(p[0]||'').slice(0,4);
+     if(yr){if(!converted[yr])converted[yr]=[]; converted[yr].push(p);}
+   });
+   d.publicHolidays=converted;
+ }
+ Object.keys(DEFAULT_PUBLIC_HOLIDAYS).forEach(yr=>{
+   if(!d.publicHolidays[yr])d.publicHolidays[yr]=JSON.parse(JSON.stringify(DEFAULT_PUBLIC_HOLIDAYS[yr]));
+ });
+ Object.keys(d.publicHolidays).forEach(yr=>{
+   d.publicHolidays[yr]=(d.publicHolidays[yr]||[])
+    .filter(p=>p&&p[0]&&p[1])
+    .sort((a,b)=>a[0].localeCompare(b[0])||a[1].localeCompare(b[1]));
+ });
+ return d;
+}
+
+function isAdministrator(){
+ return currentUser && (currentUser.username==='administrator' || currentUser.type==='Administrator');
+}
+function isActiveMember(member){
+ if(!member)return false;
+ return String(member.status||'Active').toLowerCase()!=='terminated';
+}
+function isAdministratorRole(member){
+ return member && member.type==='Administrator';
+}
+function isLocalWFHEligible(member){
+ if(!isActiveMember(member))return false;
+ if(isAdministratorRole(member))return false;
+ if((member.location||'Local')!=='Local')return false;
+ return member.type==='CSO' || member.type==='Admin';
+}
+function activeMembers(list){
+ return (list||[]).filter(isActiveMember);
+}
+
+const GOOGLE_SHEET_WEB_APP_URL='https://script.google.com/macros/s/AKfycbwpcr762N4RnbXJx5UNLcqFbCTSLVaF2-5ojOFeFNe8a9R9K2YhNit563HrRvnfEpMykQ/exec';
+const FRESH_START_MARKER='SH_STAFF_PLANNER_CLEAN_START_2026_05_08';
+const ATTACHED_WFH_SEQUENCE=[['TPH','TKT'],['CI','TLH'],['ZWW','TLK'],['TSH','WPY'],['YLC','TLJ'],['CI','TLH'],['ZWW','TLK'],['TSH','WPY'],['YLC','TLJ'],['TPH','TKT'],['ZWW','TLK'],['TSH','WPY'],['YLC','TLJ'],['TPH','TKT'],['CI','TLH'],['TSH','WPY'],['YLC','TLJ'],['TPH','TKT'],['CI','TLH'],['ZWW','TLK'],['YLC','TLJ'],['TPH','TKT'],['CI','TLH'],['ZWW','TLK'],['TSH','WPY']];
+let cloudSaveReady=false;
+let cloudSaveTimer=null;
+
+function data(){
+ try{
+  return normalizeData(JSON.parse(localStorage.staffPlannerStaffMasterV2 || JSON.stringify(defaults)));
+ }catch(e){
+  console.warn('Local data was damaged. Loading default planner data.',e);
+  localStorage.staffPlannerStaffMasterV2=JSON.stringify(normalizeData(defaults));
+  return normalizeData(JSON.parse(localStorage.staffPlannerStaffMasterV2));
+ }
+}
+
+async function loadCloudData(){
+ if(!GOOGLE_SHEET_WEB_APP_URL)return null;
+ try{
+  const res=await fetch(GOOGLE_SHEET_WEB_APP_URL+'?action=load&v='+Date.now(),{method:'GET',cache:'no-store'});
+  const txt=(await res.text()).trim();
+  if(!txt)return null;
+  const cloudData=normalizeData(JSON.parse(txt));
+  localStorage.staffPlannerStaffMasterV2=JSON.stringify(cloudData);
+  return cloudData;
+ }catch(e){
+  console.warn('Google Sheet load failed. Using browser backup data.',e);
+  return null;
+ }
+}
+
+function makeFreshOperationalData(source){
+ const fresh=normalizeData(JSON.parse(JSON.stringify(source||defaults)));
+ fresh.records=[];
+ fresh.blockouts=[];
+ fresh.wfhOverrides=[];
+ fresh.wfhRemoved=[];
+ fresh.wfhRequests=[];
+ fresh.workTimeRequests=[];
+ fresh.mcClaims=[];
+ fresh.generalClaims=[];
+ fresh.servicePaymentsPaid=[];
+ fresh.coverSwapRequests=[];
+ fresh.adminCoverOverrides=[];
+ fresh.settings=fresh.settings||{};
+ fresh.settings.wfhStartIndex=8;
+ fresh.settings.wfhSequence=JSON.parse(JSON.stringify(ATTACHED_WFH_SEQUENCE));
+ fresh.settings.cleanStartMarker=FRESH_START_MARKER;
+ return normalizeData(fresh);
+}
+
+function save(d){
+ const normalized=normalizeData(d);
+ localStorage.staffPlannerStaffMasterV2=JSON.stringify(normalized);
+ queueCloudSave(normalized);
+}
+
+function queueCloudSave(d){
+ if(!cloudSaveReady||!GOOGLE_SHEET_WEB_APP_URL)return;
+ clearTimeout(cloudSaveTimer);
+ cloudSaveTimer=setTimeout(()=>saveCloudData(d),350);
+}
+
+async function saveCloudData(d){
+ try{
+  await fetch(GOOGLE_SHEET_WEB_APP_URL,{
+   method:'POST',
+   mode:'no-cors',
+   headers:{'Content-Type':'text/plain;charset=utf-8'},
+   body:JSON.stringify(d)
+  });
+ }catch(e){
+  console.warn('Google Sheet save failed. Browser backup is still saved.',e);
+ }
+}
+
+// Simple browser sound notifications. Uses Web Audio so no external sound file is needed.
+let lastAdminPendingApprovalCount=null;
+function playPlannerSound(type){
+ try{
+  const AudioContext=window.AudioContext||window.webkitAudioContext;
+  if(!AudioContext)return;
+  const ctx=new AudioContext();
+  const now=ctx.currentTime;
+  const gain=ctx.createGain();
+  gain.connect(ctx.destination);
+  gain.gain.setValueAtTime(0.0001,now);
+  gain.gain.exponentialRampToValueAtTime(0.16,now+0.02);
+  gain.gain.exponentialRampToValueAtTime(0.0001,now+0.55);
+
+  const tones=type==='approved'?[740,980]:[520,660,520];
+  tones.forEach((freq,i)=>{
+   const osc=ctx.createOscillator();
+   osc.type='sine';
+   osc.frequency.setValueAtTime(freq,now+(i*0.14));
+   osc.connect(gain);
+   osc.start(now+(i*0.14));
+   osc.stop(now+(i*0.14)+0.11);
+  });
+  setTimeout(()=>ctx.close&&ctx.close(),900);
+ }catch(e){}
+}
+function getAdminPendingApprovalCount(d){
+ return (d.records||[]).filter(r=>r.status==='Pending').length+
+        (d.wfhRequests||[]).filter(r=>r.status==='Pending').length+
+        (d.workTimeRequests||[]).filter(r=>r.status==='Pending').length;
+}
+function getStaffApprovedSubmissionKeys(d,initial){
+ const keys=[];
+ (d.records||[]).forEach(r=>{if(r.initial===initial&&r.status==='Approved')keys.push('leave-'+r.id);});
+ (d.wfhRequests||[]).forEach(r=>{if((r.initial===initial||r.swapWith===initial)&&r.status==='Approved')keys.push('wfh-'+r.id);});
+ (d.workTimeRequests||[]).forEach(r=>{if(r.initial===initial&&r.status==='Approved')keys.push('worktime-'+r.id);});
+ (d.coverSwapRequests||[]).forEach(r=>{if((r.fromCover===initial||r.toCover===initial)&&r.status==='Approved')keys.push('coverswap-'+r.id);});
+ return keys.sort();
+}
+function checkPlannerSoundNotifications(){
+ if(!currentUser)return;
+ const d=data();
+ if(isAdministrator()){
+  const count=getAdminPendingApprovalCount(d);
+  if(count>0 && (lastAdminPendingApprovalCount===null || count>lastAdminPendingApprovalCount)){
+   playPlannerSound('pending');
+  }
+  lastAdminPendingApprovalCount=count;
+  return;
+ }
+ const initial=currentUser.initial;
+ const storageKey='staffPlannerApprovedSeen_'+initial;
+ const approvedKeys=getStaffApprovedSubmissionKeys(d,initial);
+ const oldKeys=(localStorage[storageKey]||'').split('|').filter(Boolean);
+ const hasNew=approvedKeys.some(k=>!oldKeys.includes(k));
+ if(hasNew && oldKeys.length>0){
+  playPlannerSound('approved');
+ }
+ localStorage[storageKey]=approvedKeys.join('|');
+}
+async function init(){
+ const cloudData=await loadCloudData();
+ cloudSaveReady=true;
+ const currentData=cloudData || data();
+ if(!currentData.settings || currentData.settings.cleanStartMarker!==FRESH_START_MARKER){
+  save(makeFreshOperationalData(currentData));
+ }else if(!localStorage.staffPlannerStaffMasterV2){
+  save(makeFreshOperationalData(defaults));
+ }
+ renderAll();
+ if(currentUser && !isAdministrator() && currentUser.mustChangePassword){
+  setTimeout(function(){
+   showTab('password');
+   alert('Your password has been reset by Administrator. Please change your password now.');
+  },120);
+ }
+}
+
+function login(){
+ const u=$('loginUser').value.trim().toLowerCase(), p=$('loginPass').value;
+ const d=data();
+ if(u==='admin'&&p===(d.settings.adminPassword||'admin123')) currentUser={initial:'ADMIN',name:'Administrator',type:'Administrator',username:'administrator'};
+ else {
+  const m=d.members.find(x=>x.initial.toLowerCase()===u && (x.password||'123')===p);
+  if(!m) return alert('Wrong password. Please contact Administrator to reset the password.');
+  if(!isActiveMember(m)) return alert('This staff account has been terminated and cannot login.');
+  currentUser=m;
+ }
+ $('login').classList.add('hide');$('app').classList.remove('hide');$('logoutBtn').classList.remove('hide');
+ $('who').textContent=`${currentUser.name} (${currentUser.type})`;
+ document.body.classList.toggle('isAdmin',isAdministrator());
+ document.body.classList.toggle('isStaff',!isAdministrator());
+ document.querySelectorAll('.adminOnly').forEach(e=>{
+  e.style.display=isAdministrator()?'':'none';
+ });
+ const wfhChangeTab=document.querySelector('.tab[data-tab="wfhchange"]');
+ if(wfhChangeTab)wfhChangeTab.style.display=isRemoteStaffUser()?'none':'';
+ $('adminTables').style.display='grid';
+ if($('memberCard')) $('memberCard').style.display='none';
+ renderAll();
+}
+function logout(){currentUser=null;lastAdminPendingApprovalCount=null;document.body.classList.remove('isAdmin','isStaff');$('login').classList.remove('hide');$('app').classList.add('hide');$('logoutBtn').classList.add('hide');$('who').textContent='Not logged in'}
+function showTab(t){
+ const adminTabs=['members','approvals','summary','adminmcclaims','blockout','settings'];
+ if(currentUser && !isAdministrator() && adminTabs.includes(t)){
+  alert('You do not have permission to access this section.');
+  t='calendar';
+ }
+ if(currentUser && isRemoteStaffUser() && t==='wfhchange'){
+  alert('WFH Change is not required for remote staff.');
+  t='calendar';
+ }
+ document.querySelectorAll('.tab').forEach(x=>x.classList.toggle('active',x.dataset.tab===t));
+ ['calendar','apply','mc','submitclaim','adminmcclaims','worktime','coverswap','wfhchange','members','approvals','summary','buddy','blockout','password','settings'].forEach(x=>$('panel-'+x).classList.toggle('hide',x!==t));
+ renderAll();
+}
+
+function updatePendingTabAlerts(){
+ if(!currentUser)return;
+ const d=data();
+
+ const hasLeavePending=isAdministrator() && d.records.some(r=>r.status==='Pending');
+ const hasAdminWFHPending=isAdministrator() && (d.wfhRequests||[]).some(r=>r.status==='Pending');
+ const hasWorkTimePending=isAdministrator() && (d.workTimeRequests||[]).some(r=>r.status==='Pending');
+ const hasIncomingInternalWFHPending=!isAdministrator() && (d.wfhRequests||[]).some(r=>
+  r.requestType==='internalSwap' &&
+  r.status==='Pending Staff Approval' &&
+  r.swapWith===currentUser.initial
+ );
+ const hasIncomingCoverSwapPending=!isAdministrator() && (d.coverSwapRequests||[]).some(r=>
+  r.status==='Pending Staff Approval' &&
+  r.toCover===currentUser.initial
+ );
+
+ document.querySelectorAll('.tab').forEach(tab=>{
+  if(tab.dataset.tab==='approvals') tab.classList.toggle('pendingAlert',hasLeavePending);
+  if(tab.dataset.tab==='wfhchange') tab.classList.toggle('pendingAlert',hasAdminWFHPending||hasIncomingInternalWFHPending);
+  if(tab.dataset.tab==='worktime') tab.classList.toggle('pendingAlert',hasWorkTimePending);
+  if(tab.dataset.tab==='coverswap') tab.classList.toggle('pendingAlert',hasIncomingCoverSwapPending);
+ });
+}
+
+function renderAll(){renderSelectors();renderCalendar();renderMembers();renderRecords();renderApprovals();renderMCClaims();renderStaffMCClaimStatus();renderStaffGeneralClaimStatus();renderBlockouts();renderWFHChanges();renderWorkTimeChanges();renderCoverSwapRequests();renderBuddySystem();refreshAdminCoverChangeOptions();renderAttendanceSummary();updatePendingTabAlerts();renderKPI();loadSettings();renderPublicHolidayEditor();renderWPReminder(); const wfhChangeTab=document.querySelector('.tab[data-tab="wfhchange"]'); if(wfhChangeTab)wfhChangeTab.style.display=(currentUser&&isRemoteStaffUser())?'none':''; if(currentUser&&$('memberCard')){$('memberCard').style.display='none';$('adminTables').style.display='grid';} setTimeout(checkPlannerSoundNotifications,80);}
+function renderSelectors(){
+ const d=data();
+
+ ['applyStaff','mcStaff','claimStaff','wfhStaff','workTimeStaff'].forEach(id=>{
+   const s=$(id);
+   if(!s)return;
+
+   s.innerHTML='';
+
+   activeMembers(d.members)
+    .filter(m=>isAdministrator() || m.initial===currentUser?.initial)
+    .forEach(m=>{
+      s.add(new Option(`${m.initial} - ${m.name}`,m.initial));
+    });
+ });
+
+ const adminMC=$('adminMCStaff');
+ if(adminMC){
+   adminMC.innerHTML='';
+   activeMembers(d.members).forEach(m=>adminMC.add(new Option(`${m.initial} - ${m.name}`,m.initial)));
+ }
+
+ const adminWFH=$('adminWFHStaff');
+ if(adminWFH){
+   adminWFH.innerHTML='';
+   activeMembers(d.members).filter(isLocalWFHEligible).forEach(m=>adminWFH.add(new Option(`${m.initial} - ${m.name}`,m.initial)));
+ }
+
+ const cancelWFH=$('cancelWFHStaff');
+ if(cancelWFH){
+   cancelWFH.innerHTML='';
+   activeMembers(d.members).filter(isLocalWFHEligible).forEach(m=>cancelWFH.add(new Option(`${m.initial} - ${m.name}`,m.initial)));
+ }
+}
+function publicHolidayList(year){const d=data(); return (d.publicHolidays&&d.publicHolidays[String(year)])?d.publicHolidays[String(year)]:[]}
+function allPublicHolidays(){const d=data(); return Object.values(d.publicHolidays||{}).flat().sort((a,b)=>a[0].localeCompare(b[0])||a[1].localeCompare(b[1]))}
+function isPH(date){return publicHolidayList(date.slice(0,4)).find(p=>p[0]===date)}
+function isWorkingDay(date, member){let day=fmt(date).getDay(); if(isPH(date))return false; if(day===0)return false; if(day===6 && member?.week==='5')return false; return true}
+function eachDate(a,b){let out=[],d=fmt(a),end=fmt(b); while(d<=end){out.push(iso(d)); d.setDate(d.getDate()+1)} return out}
+function workingDays(a,b,member){return eachDate(a,b).filter(x=>isWorkingDay(x,member)).length}
+function leaveUnits(type,a,b,member){
+ if(type==='AM'||type==='PM'||type==='CCLAM'||type==='CCLPM') return 0.5;
+ return workingDays(a,b,member);
+}
+function birthdayOff(member,year){
+ if(!member.birthday)return null; const bd=fmt(member.birthday); let d=new Date(year,bd.getMonth(),bd.getDate());
+ const day=d.getDay();
+ if(member.week==='5' && day===6) d.setDate(d.getDate()-1);
+ if(member.week==='5' && day===0) d.setDate(d.getDate()+1);
+ return iso(d);
+}
+
+function serviceAnniversary(member,year){
+ if(!member||!member.join)return null;
+ const join=fmt(member.join);
+ const years=year-join.getFullYear();
+ if(years<5||years>40||years%5!==0)return null;
+ const d=new Date(year,join.getMonth(),join.getDate());
+ return {date:iso(d),years};
+}
+function serviceAnniversariesForMonth(year,monthIndex){
+ const d=data();
+ return activeMembers(d.members).map(m=>{
+  const svc=serviceAnniversary(m,year);
+  if(!svc)return null;
+  const svcDate=fmt(svc.date);
+  if(svcDate.getMonth()!==monthIndex)return null;
+  return {initial:m.initial,name:m.name,years:svc.years,date:svc.date};
+ }).filter(Boolean).sort((a,b)=>a.date.localeCompare(b.date)||a.initial.localeCompare(b.initial));
+}
+function serviceDateText(date){
+ return fmt(date).toLocaleDateString('en-SG',{day:'2-digit',month:'short',year:'numeric'});
+}
+function isSpecialDay(date){
+ const d=fmt(date), day=d.getDate(), m=d.getMonth()+1;
+ return day===15||day===25||day===m;
+}
+function hasApprovedAbsence(initial,date){
+ return data().records.some(r=>r.initial===initial && r.status==='Approved' && eachDate(r.from,r.to).includes(date) && r.type!=='WFH');
+}
+function wfhForDate(date){
+ const d=data(), seq=d.settings.wfhSequence, work=fmt(date).getDay();
+ if(work===0||work===6) return [];
+ const base=new Date(2026,0,1); const target=fmt(date);
+ let weekdays=0;
+ if(target>=base){
+   for(let x=new Date(base); x<=target; x.setDate(x.getDate()+1)){
+     if(x.getDay()>0 && x.getDay()<6) weekdays++;
+   }
+ } else {
+   for(let x=new Date(target); x<base; x.setDate(x.getDate()+1)){
+     if(x.getDay()>0 && x.getDay()<6) weekdays--;
+   }
+ }
+ let idx=((d.settings.wfhStartIndex + weekdays - 1) % seq.length + seq.length) % seq.length;
+ let chosen=Array.isArray(seq[idx]) ? [...seq[idx]] : [seq[idx]];
+ if(isSpecialDay(date)){
+   chosen=chosen.map(person=>{
+     if(!(hasApprovedAbsence(person,date)||packerConflict(person,date))) return person;
+     for(let i=1;i<seq.length;i++){
+       const row=seq[(idx+i)%seq.length], candidates=Array.isArray(row)?row:[row];
+       const alt=candidates.find(x=>!chosen.includes(x)&&!hasApprovedAbsence(x,date)&&!packerConflict(x,date));
+       if(alt) return alt;
+     }
+     return person;
+   });
+ }
+ const members=data().members||[];
+ const filtered=chosen.filter(x=>x && isLocalWFHEligible(members.find(m=>m.initial===x)));
+ if(chosen.length>0 && filtered.length===0) return ['NEEDS_REASSIGN'];
+ return filtered;
+}
+function packerConflict(initial,date){
+ const d=data(), m=d.members.find(x=>x.initial===initial); if(!m||m.packer==='No')return false;
+ const absentPackers=d.records.filter(r=>r.status==='Approved' && eachDate(r.from,r.to).includes(date)).map(r=>r.initial);
+ const packers=d.members.filter(x=>x.packer==='Main'||x.packer==='Backup');
+ const onDuty=packers.filter(x=>!absentPackers.includes(x.initial) && x.initial!==initial).length;
+ return onDuty<2;
+}
+
+function getBlockout(date){
+ const d=data();
+ return (d.blockouts||[]).find(b=>b.date===date);
+}
+function addBlockout(){
+ const d=data();
+ if(!d.blockouts)d.blockouts=[];
+ const date=$('blockDate').value;
+ const reason=$('blockReason').value.trim();
+ if(!date)return alert('Please choose block out date.');
+ if(d.blockouts.some(b=>b.date===date))return alert('This date is already blocked out.');
+ d.blockouts.push({id:Date.now(),date,reason});
+ save(d);
+ $('blockDate').value='';
+ $('blockReason').value='';
+ renderAll();
+}
+function deleteBlockout(id){
+ const d=data();
+ if(!confirm('Remove this block out date?'))return;
+ d.blockouts=(d.blockouts||[]).filter(b=>b.id!==id);
+ save(d);
+ renderAll();
+}
+function renderBlockouts(){
+ if(!$('blockoutList'))return;
+ const d=data();
+ const list=(d.blockouts||[]).slice().sort((a,b)=>a.date.localeCompare(b.date));
+ $('blockoutList').innerHTML=list.map(b=>`<div class="item"><b>${b.date}</b><div class="muted">${b.reason||'Blocked out date'}</div><button class="danger small" style="margin-top:9px" onclick="deleteBlockout(${b.id})">Remove</button></div>`).join('')||'<div class="muted">No blocked dates yet.</div>';
+}
+
+
+
+function getBaseWFHList(date){
+ const base=wfhForDate(date);
+ return Array.isArray(base)?base:(base?[base]:[]);
+}
+function getStaffType(initial){
+ const d=data();
+ const m=d.members.find(x=>x.initial===initial);
+ return m?m.type:null;
+}
+function sameTypeWFHSwapAllowed(initialA, initialB){
+ if(!initialA||!initialB||initialA==='NEEDS_REASSIGN'||initialB==='NEEDS_REASSIGN')return false;
+ const d=data();
+ const a=d.members.find(m=>m.initial===initialA);
+ const b=d.members.find(m=>m.initial===initialB);
+ if(!isLocalWFHEligible(a)||!isLocalWFHEligible(b))return false;
+ return getStaffType(initialA)===getStaffType(initialB);
+}
+
+
+function getFinalWFHListForDate(date){
+ const d=data();
+ let list=getBaseWFHList(date).slice();
+
+ (d.wfhRequests||[]).filter(r=>r.status==='Approved'&&r.swapWith).forEach(r=>{
+  if(date===r.originalDate){
+   list=list.filter(x=>x!==r.initial);
+   if(!list.includes(r.swapWith)) list.push(r.swapWith);
+  }
+  if(date===r.newDate){
+   list=list.filter(x=>x!==r.swapWith);
+   if(!list.includes(r.initial)) list.push(r.initial);
+  }
+ });
+
+ list=list.filter(x=>x==='NEEDS_REASSIGN' || !isWFHRemoved(date,x));
+
+ return list;
+}
+
+function getWFHOverrides(date){
+ const d=data();
+ return (d.wfhOverrides||[]).filter(x=>x.date===date);
+}
+function isWFHRemoved(date, initial){
+ const d=data();
+ return (d.wfhRemoved||[]).some(x=>x.date===date && x.initial===initial);
+}
+
+function toggleWFHRequestType(){
+ const type=$('wfhRequestType')?$('wfhRequestType').value:'swap';
+ if($('wfhOriginalWrap')) $('wfhOriginalWrap').style.display=type==='special'?'none':'block';
+ if($('wfhNewDateLabel')) $('wfhNewDateLabel').textContent=type==='special'?'Requested WFH Date':(type==='internalSwap'?'Intended WFH Date':'Requested New WFH Date');
+}
+
+function submitWFHChange(){
+ const d=data();
+ if(!d.wfhRequests)d.wfhRequests=[];
+ const initial=$('wfhStaff').value;
+ const requestType=$('wfhRequestType')?$('wfhRequestType').value:'swap';
+ const originalDate=$('wfhOriginalDate').value;
+ const newDate=$('wfhNewDate').value;
+ const reason=$('wfhReason').value.trim();
+
+ if(!initial||!newDate)return alert('Please select staff and requested WFH date.');
+
+ const staff=d.members.find(m=>m.initial===initial);
+ if(!isLocalWFHEligible(staff)){
+  return alert('WFH request is only for active Local CSO/Admin. Administrator, Remote and Terminated staff are excluded.');
+ }
+ if(requestType==='special'){
+  if(!staff || staff.type!=='CSO'){
+   return alert('Only CSO can request special approval WFH without swap.');
+  }
+  d.wfhRequests.push({id:Date.now(),initial,requestType:'special',originalDate:'',newDate,reason,status:'Pending'});
+  save(d);
+  if($('wfhOriginalDate')) $('wfhOriginalDate').value='';
+  $('wfhNewDate').value='';
+  $('wfhReason').value='';
+  renderAll();
+  alert('Special WFH request submitted for Admin approval.');
+  return;
+ }
+
+ if(!originalDate)return alert('Please select original WFH date.');
+ const originalList=getBaseWFHList(originalDate);
+ const newList=getBaseWFHList(newDate);
+ if(!originalList.includes(initial)){
+  return alert('Selected staff is not scheduled for WFH on the original date.');
+ }
+
+ const requesterType=getStaffType(initial);
+ const swapCandidate=newList.find(x=>getStaffType(x)===requesterType);
+
+ if(!swapCandidate){
+  return alert('No same type staff available to swap on the requested new WFH date. CSO can only swap with CSO, Admin can only swap with Admin.');
+ }
+
+ if(requestType==='internalSwap'){
+  d.wfhRequests.push({id:Date.now(),initial,requestType:'internalSwap',originalDate,newDate,swapWith:swapCandidate,reason,status:'Pending Staff Approval'});
+  save(d);
+  $('wfhOriginalDate').value='';
+  $('wfhNewDate').value='';
+  $('wfhReason').value='';
+  renderAll();
+  alert('Internal WFH swap request sent to '+swapCandidate+' for approval.');
+  return;
+ }
+
+ d.wfhRequests.push({id:Date.now(),initial,requestType:'swap',originalDate,newDate,swapWith:swapCandidate,reason,status:'Pending'});
+ save(d);
+ $('wfhOriginalDate').value='';
+ $('wfhNewDate').value='';
+ $('wfhReason').value='';
+ renderAll();
+ alert('WFH change request submitted for Admin approval.');
+}
+function approveInternalWFHChange(id,status){
+ const d=data();
+ const r=(d.wfhRequests||[]).find(x=>x.id===id);
+ if(!r || r.requestType!=='internalSwap')return;
+ if(!currentUser || currentUser.initial!==r.swapWith){
+  return alert('Only the staff receiving this internal swap request can approve or reject it.');
+ }
+ if(r.status!=='Pending Staff Approval')return alert('This internal WFH swap request has already been handled.');
+
+ if(status==='Approved'){
+  const originalList=getBaseWFHList(r.originalDate);
+  const newList=getBaseWFHList(r.newDate);
+
+  if(!originalList.includes(r.initial)){
+   alert('Approval failed: requester is not scheduled for WFH on the original date.');
+   return;
+  }
+  if(!newList.includes(r.swapWith) || !sameTypeWFHSwapAllowed(r.initial,r.swapWith)){
+   alert('Approval failed: the intended staff is no longer available for same type swap on the intended date.');
+   return;
+  }
+ }
+
+ r.status=status;
+ r.staffApprovedBy=currentUser.initial;
+ r.staffApprovedOn=iso(new Date());
+ save(d);
+ renderAll();
+}
+function approveWFHChange(id,status){
+ if(!isAdministrator())return alert('Only Administrator can approve or reject WFH changes.');
+ const d=data();
+ const r=(d.wfhRequests||[]).find(x=>x.id===id);
+ if(!r)return;
+ if(r.requestType==='internalSwap')return alert('Internal WFH swap is approved or rejected by the receiving staff.');
+
+ if(status==='Approved' && r.requestType==='special'){
+  const staff=d.members.find(m=>m.initial===r.initial);
+  if(!staff || staff.type!=='CSO'){
+   alert('Approval failed: Special WFH without swap is only for CSO.');
+   return;
+  }
+  r.status=status;
+  save(d);
+  renderAll();
+  return;
+ }
+
+ if(status==='Approved'){
+  const originalList=getBaseWFHList(r.originalDate);
+  const newList=getBaseWFHList(r.newDate);
+
+  if(!originalList.includes(r.initial)){
+   alert('Approval failed: requester is not scheduled for WFH on the original date.');
+   return;
+  }
+
+  let swapWith=r.swapWith;
+  if(!swapWith || !newList.includes(swapWith) || !sameTypeWFHSwapAllowed(r.initial,swapWith)){
+   swapWith=newList.find(x=>sameTypeWFHSwapAllowed(r.initial,x));
+  }
+
+  if(!swapWith){
+   alert('Approval failed: no same type staff available to swap. CSO can only swap with CSO, Admin can only swap with Admin.');
+   return;
+  }
+
+  r.swapWith=swapWith;
+ }
+
+ r.status=status;
+ save(d);
+ renderAll();
+}
+
+function adminCancelWFH(){
+ const d=data();
+ const date=$('cancelWFHDate').value;
+ const initial=$('cancelWFHStaff').value;
+ const reason=$('cancelWFHReason').value.trim();
+
+ if(!date||!initial)return alert('Please select WFH date and staff.');
+
+ if(!d.wfhRemoved)d.wfhRemoved=[];
+
+ const exists=d.wfhRemoved.find(x=>x.date===date && x.initial===initial);
+ if(exists)return alert('WFH already cancelled for this staff on this date.');
+
+ d.wfhRemoved.push({
+   id:Date.now(),
+   date,
+   initial,
+   reason:reason||'Admin manpower balancing',
+   status:'Outstanding'
+ });
+
+ save(d);
+
+ $('cancelWFHDate').value='';
+ $('cancelWFHReason').value='';
+
+ renderAll();
+
+ alert('WFH cancelled successfully. You may now reassign another staff WFH.');
+}
+
+function adminSetWFH(){
+ const d=data();
+ if(!d.wfhOverrides)d.wfhOverrides=[];
+ if(!d.wfhRemoved)d.wfhRemoved=[];
+ const date=$('adminWFHDate').value;
+ const initial=$('adminWFHStaff').value;
+ const reason=$('adminWFHReason').value.trim();
+ if(!date||!initial)return alert('Please choose date and staff.');
+ const selectedMember=d.members.find(m=>m.initial===initial);
+ if(!isLocalWFHEligible(selectedMember))return alert('Only active Local CSO/Admin can be assigned to WFH. Administrator, Remote and Terminated staff are excluded.');
+
+ d.wfhRemoved=(d.wfhRemoved||[]).filter(r=>!(r.date===date&&r.initial===initial));
+
+ const baseList=getBaseWFHList(date).filter(x=>x!=='NEEDS_REASSIGN');
+ const sameTypeBase=baseList.filter(x=>getStaffType(x)===getStaffType(initial));
+
+ if(sameTypeBase.length>0 && !baseList.includes(initial)){
+  sameTypeBase.forEach(x=>{
+   d.wfhRemoved=d.wfhRemoved.filter(r=>!(r.date===date&&r.initial===x));
+   d.wfhRemoved.push({id:Date.now()+Math.random(),date,initial:x,reason:'Admin WFH override'});
+  });
+ }
+
+ d.wfhOverrides=d.wfhOverrides.filter(x=>!(x.date===date && x.initial===initial));
+ d.wfhOverrides.push({id:Date.now(),date,initial,reason:reason||'Admin manual WFH change'});
+ save(d);
+ $('adminWFHDate').value='';
+ $('adminWFHReason').value='';
+ renderAll();
+ alert('WFH changed for selected date.');
+}
+function deleteWFHOverride(id){
+ const d=data();
+ if(!confirm('Remove this WFH override?'))return;
+ d.wfhOverrides=(d.wfhOverrides||[]).filter(x=>x.id!==id);
+ save(d);
+ renderAll();
+}
+
+function cancelWFHChange(id){
+ if(!isAdministrator())return alert('Only Administrator can cancel approved WFH changes.');
+ const d=data();
+ const r=(d.wfhRequests||[]).find(x=>x.id===id);
+ if(!r)return alert('WFH record not found.');
+
+ if(r.status!=='Approved'){
+  return alert('Only approved WFH changes can be cancelled.');
+ }
+
+ if(!confirm('Cancel this approved WFH change and revert calendar back to original rotation?'))return;
+
+ r.status='Cancelled';
+ r.cancelledOn=iso(new Date());
+ r.notes=(r.notes?r.notes+' ':'')+'Cancelled by Admin.';
+
+ save(d);
+ renderAll();
+ alert('Approved WFH change cancelled. Calendar has reverted to original rotation.');
+}
+
+
+function planMakeupWFHCancel(id){
+ if(!isAdministrator())return alert('Only Administrator can replan cancelled WFH.');
+ const d=data();
+ const item=(d.wfhRemoved||[]).find(x=>String(x.id)===String(id));
+ if(!item)return alert('Cancelled WFH record not found.');
+
+ const dateInput=$('makeupWFHDate_'+id);
+ const newDate=dateInput?dateInput.value:'';
+ if(!newDate)return alert('Please select the replacement WFH date.');
+
+ if(!d.wfhOverrides)d.wfhOverrides=[];
+ if(!d.wfhRemoved)d.wfhRemoved=[];
+
+ const member=d.members.find(m=>m.initial===item.initial);
+ if(!isLocalWFHEligible(member))return alert('Selected staff is no longer eligible for WFH.');
+
+ d.wfhRemoved=d.wfhRemoved.filter(r=>!(r.date===newDate && r.initial===item.initial));
+
+ d.wfhOverrides=d.wfhOverrides.filter(o=>!(o.date===newDate && o.initial===item.initial));
+ d.wfhOverrides.push({
+  id:Date.now(),
+  date:newDate,
+  initial:item.initial,
+  reason:'Make-up WFH for cancelled WFH on '+item.date
+ });
+
+ item.status='Replanned';
+ item.replannedDate=newDate;
+ item.replannedOn=iso(new Date());
+
+ save(d);
+ renderAll();
+ alert('Replacement WFH planned successfully.');
+}
+
+function renderWFHChanges(){
+ if(!$('wfhChangeList'))return;
+ const d=data();
+ const reqs=(d.wfhRequests||[]).filter(r=>isAdministrator()||r.initial===currentUser?.initial||r.swapWith===currentUser?.initial).slice().sort((a,b)=>{
+  const aPending=(a.status==='Pending'||a.status==='Pending Staff Approval');
+  const bPending=(b.status==='Pending'||b.status==='Pending Staff Approval');
+  if(aPending&&!bPending)return -1;
+  if(!aPending&&bPending)return 1;
+  return (b.id||0)-(a.id||0);
+ });
+ const cancelled=(d.wfhRemoved||[]).filter(r=>{
+  if(isAdministrator())return true;
+  return r.initial===currentUser?.initial;
+ }).slice().sort((a,b)=>{
+  const aOut=!a.status||a.status==='Outstanding';
+  const bOut=!b.status||b.status==='Outstanding';
+  if(aOut&&!bOut)return -1;
+  if(!aOut&&bOut)return 1;
+  return (b.date||'').localeCompare(a.date||'');
+ });
+ const overrides=isAdministrator()?(d.wfhOverrides||[]).slice().sort((a,b)=>b.date.localeCompare(a.date)):[];
+ let html='';
+ if(cancelled.length){
+  html+=`<div class="notice"><b>Cancelled WFH / Outstanding Make-up</b><br>Use this section to track cancelled WFH and replan a replacement WFH date for fairness.</div>`;
+  html+=cancelled.map(c=>{
+   const staff=d.members.find(m=>m.initial===c.initial);
+   const staffName=staff?staff.name:c.initial;
+   const outstanding=!c.status||c.status==='Outstanding';
+   const statusText=outstanding?'Outstanding':'Replanned';
+   const statusClass=outstanding?'pending':'approved';
+   return `<div class="item"><b>${staffName} (${c.initial}) - Cancelled WFH</b><div>Cancelled date: ${c.date}</div><div class="muted">${c.reason||''}${c.replannedDate?`<br>Replacement WFH: ${c.replannedDate}`:''}</div><span class="status ${statusClass}">${statusText}</span>${isAdministrator()&&outstanding?`<div class="row" style="margin-top:9px"><div><label>Replacement WFH Date</label><input id="makeupWFHDate_${c.id}" type="date"></div><button class="ok small" style="align-self:flex-end" onclick="planMakeupWFHCancel('${c.id}')">Plan Replacement</button></div>`:''}</div>`;
+  }).join('');
+ }
+ if(reqs.length){
+  html+=reqs.map(r=>{
+   const staff=d.members.find(m=>m.initial===r.initial);
+   const staffName=staff?staff.name:r.initial;
+   const canApprove=isAdministrator()&&r.status==='Pending';
+   const canApproveInternal=currentUser && r.requestType==='internalSwap' && r.status==='Pending Staff Approval' && r.swapWith===currentUser.initial;
+   const canCancelWFH=isAdministrator()&&r.status==='Approved';
+   const requestTitle=r.requestType==='special'?'Special WFH Request':(r.requestType==='internalSwap'?'Internal WFH Swap':'WFH Change');
+   const statusClass=(r.status||'').toLowerCase().replace(/\s+/g,'');
+   return `<div class="item"><b>${staffName} (${r.initial}) - ${requestTitle}</b><div>${r.requestType==='special'?r.newDate:(r.originalDate+' → '+r.newDate)}</div><div class="muted">${r.swapWith?`Swap with: ${r.swapWith}<br>`:''}${r.reason||''}</div><span class="status ${statusClass}">${r.status}</span>${canApprove?`<div class="row" style="margin-top:9px"><button class="ok small" onclick="approveWFHChange(${r.id},'Approved')">Approve</button><button class="danger small" onclick="approveWFHChange(${r.id},'Rejected')">Reject</button></div>`:''}${canApproveInternal?`<div class="row" style="margin-top:9px"><button class="ok small" onclick="approveInternalWFHChange(${r.id},'Approved')">Approve Swap</button><button class="danger small" onclick="approveInternalWFHChange(${r.id},'Rejected')">Reject Swap</button></div>`:''}${canCancelWFH?`<div class="row" style="margin-top:9px"><button class="danger small" onclick="cancelWFHChange(${r.id})">Cancel WFH</button></div>`:''}</div>`;
+  }).join('');
+ }
+ if(overrides.length){
+  html+=`<div class="notice"><b>Admin WFH Overrides</b></div>`;
+  html+=overrides.map(o=>{
+   const staff=d.members.find(m=>m.initial===o.initial);
+   const staffName=staff?staff.name:o.initial;
+   return `<div class="item"><b>${o.date} - ${staffName} (${o.initial})</b><div class="muted">${o.reason||''}</div><button class="danger small" style="margin-top:9px" onclick="deleteWFHOverride(${o.id})">Remove Override</button></div>`;
+  }).join('');
+ }
+ $('wfhChangeList').innerHTML=html||'<div class="muted">No WFH change records yet.</div>';
+}
+
+function setLeaveDays(days){
+ const from=$('fromDate').value;
+ if(!from)return alert('Please choose From date first.');
+ const d=fmt(from);
+ d.setDate(d.getDate()+days-1);
+ $('toDate').value=iso(d);
+}
+
+function submitRequest(){
+ const d=data(), initial=$('applyStaff').value, member=d.members.find(m=>m.initial===initial), type=$('applyType').value;
+ if(!isActiveMember(member))return alert('This staff is terminated and cannot submit leave.');
+ const from=$('fromDate').value, to=$('toDate').value||from; if(!from||!to)return alert('Please choose date.');
+ const leaveReason=$('reason').value.trim();
+ if(!leaveReason)return alert('Please enter reason before submitting leave application.');
+ let needApproval=false, notes=[];
+
+ let days=workingDays(from,to,member), units=leaveUnits(type,from,to,member);
+
+ const newDates=eachDate(from,to);
+ const duplicateOwnLeave=d.records.some(r=>
+  r.initial===initial &&
+  r.status!=='Cancelled' &&
+  r.status!=='Rejected' &&
+  r.type!=='WFH' &&
+  type!=='WFH' &&
+  newDates.some(date=>eachDate(r.from,r.to).includes(date))
+ );
+
+ if(duplicateOwnLeave){
+  return alert('This staff already has an active leave/MC record on one or more selected dates. Please cancel the existing record first before reapplying.');
+ }
+
+ // Balance check: if no AL / CCL balance, staff cannot apply that leave type. They may apply Unpaid Leave instead.
+ const alBal=alEntitlement(member)+phInLieuBonus(member)-used(initial,'AL');
+ const cclBal=childcareBalance(member);
+
+ if(['AL','AM','PM','EL'].includes(type) && units>alBal){
+  return alert('Insufficient Annual Leave balance. Please apply Unpaid Leave instead, subject to Administrator approval.');
+ }
+
+ if(['CCL','CCLAM','CCLPM'].includes(type)){
+  if(cclBal<=0){
+   return alert('No Childcare Leave balance available. This application was not submitted. Please apply Annual Leave instead, subject to Administrator approval.');
+  }
+  if(units>cclBal){
+   return alert('Insufficient Childcare Leave balance. This application was not submitted. Please apply Annual Leave instead, subject to Administrator approval.');
+  }
+ }
+
+ if(type==='UPL'){
+  needApproval=true;
+  notes.push('Unpaid Leave requires Administrator approval.');
+ }
+
+ // Same rule for CSO and Admin: only 1 same-type staff on leave per day.
+ if(type!=='WFH' && (member.type==='CSO' || member.type==='Admin')){
+  for(const date of eachDate(from,to)){
+   let sameTypeTaken=d.records.some(r=>{
+    if(r.status==='Cancelled'||r.status==='Rejected'||r.type==='WFH') return false;
+    if(!eachDate(r.from,r.to).includes(date)) return false;
+    const existingMember=d.members.find(m=>m.initial===r.initial);
+    return existingMember && existingMember.type===member.type && r.initial!==initial;
+   });
+   if(sameTypeTaken){
+    needApproval=true;
+    notes.push('Another '+member.type+' already has leave/MC on one or more selected dates. Admin approval required.');
+    break;
+   }
+  }
+ }
+
+ const blockedDates=eachDate(from,to).filter(date=>getBlockout(date));
+ if(type!=='WFH' && blockedDates.length>0){
+  needApproval=true;
+  notes.push('Selected date includes Admin block out date. Emergency/special request requires admin approval.');
+ }
+
+ // NEW RULE: Leave within 7 days requires approval
+ const today=new Date();
+ const fromDate=new Date(from);
+ const diffDays=Math.ceil((fromDate - today)/(1000*60*60*24));
+ if(['AL','AM','PM','EL'].includes(type) && diffDays < 7){
+  needApproval=true;
+  notes.push('Leave within 7 days requires admin approval.');
+ }
+
+ if(type==='EL' && days<3){needApproval=true; notes.push('Emergency leave below 3 days requires approval.')}
+ if(days>5){needApproval=true; notes.push('More than 5 straight working days requires approval.')}
+
+ if(member.packer!=='No'){
+  for(const date of eachDate(from,to)){ if(packerConflict(initial,date)){needApproval=true;notes.push('Packer duty requires 2 staff on duty. Admin approval required.');break}}
+ }
+
+ const status=needApproval?'Pending':'Approved';
+ d.records.push({id:Date.now(),initial,type,from,to,reason:$('reason').value,units,status,notes:notes.join(' ')});
+ save(d);$('applyMsg').classList.remove('hide');$('applyMsg').innerHTML=`Submitted as <b>${status}</b>. ${notes.join(' ')}`;renderAll();
+}
+
+function syncMCTo(){
+ if($('mcDate') && $('mcToDate') && !$('mcToDate').value){
+  $('mcToDate').value=$('mcDate').value;
+ }
+}
+function setMCDays(days){
+ const from=$('mcDate').value;
+ if(!from)return alert('Please choose MC From date first.');
+ const d=fmt(from);
+ d.setDate(d.getDate()+days-1);
+ $('mcToDate').value=iso(d);
+ updateMCPreview();
+}
+function selectedMCWFHDates(){
+ const boxes=document.querySelectorAll('.mcwfhDayOption:checked');
+ return Array.from(boxes).map(b=>b.value);
+}
+function renderMCWFHOptions(){
+ if(!$('mcWFHOptions'))return;
+ const d=data();
+ const initial=$('mcStaff')?$('mcStaff').value:'';
+ const from=$('mcDate')?$('mcDate').value:'';
+ const to=($('mcToDate')&&$('mcToDate').value)||from;
+ const member=d.members.find(m=>m.initial===initial);
+ if(!initial||!from||!member){
+  $('mcWFHOptions').classList.add('hide');
+  $('mcWFHOptions').innerHTML='';
+  return;
+ }
+ const dates=eachDate(from,to);
+ if(!dates.length){
+  $('mcWFHOptions').classList.add('hide');
+  $('mcWFHOptions').innerHTML='';
+  return;
+ }
+ const selected=new Set(selectedMCWFHDates());
+ $('mcWFHOptions').classList.remove('hide');
+ $('mcWFHOptions').innerHTML='<b>MC-WFH Option</b><br><span class="muted">Tick the exact date(s) where staff will work from home instead of taking actual MC. MC-WFH will not deduct MC and will not require covering.</span>'+dates.map(date=>{
+  const nonWorking=!isWorkingDay(date,member);
+  const note=nonWorking?' - Non-working day / no deduction':' - MC-WFH (No covering / No MC deduction)';
+  return `<label style="display:flex;gap:8px;align-items:center;margin-top:8px"><input class="mcwfhDayOption" type="checkbox" value="${date}" ${selected.has(date)?'checked':''} onchange="updateMCPreview()" style="width:auto"> <span>${date}${note}</span></label>`;
+ }).join('');
+}
+
+function updateMCPreview(){
+ if(!$('mcPreview'))return;
+ renderMCWFHOptions();
+ const d=data();
+ const initial=$('mcStaff')?$('mcStaff').value:'';
+ const from=$('mcDate')?$('mcDate').value:'';
+ const to=($('mcToDate')&&$('mcToDate').value)||from;
+ const member=d.members.find(m=>m.initial===initial);
+ if(!initial||!from||!member){
+  $('mcPreview').innerHTML='Select MC date to preview deduction.';
+  return;
+ }
+ const workingDates=eachDate(from,to).filter(x=>isWorkingDay(x,member));
+ const allDates=eachDate(from,to);
+ const mcWFHSet=new Set(selectedMCWFHDates());
+ const realMCDates=workingDates.filter(x=>!mcWFHSet.has(x));
+ const units=realMCDates.length;
+ const mcWFHCount=allDates.filter(x=>mcWFHSet.has(x)).length;
+ const bal=(mcEntitlement(member)-used(initial,'MC')-units).toFixed(1).replace('.0','');
+ $('mcPreview').innerHTML=`Actual MC days to deduct: <b>${units}</b><br>MC-WFH selected days: <b>${mcWFHCount}</b><br>Estimated MC balance after submission: <b>${bal}</b>`;
+}
+
+function cancelOverlappingLeaveForMC(initial, from, to){
+ const d=data();
+ const mcDates=eachDate(from,to);
+ let cancelledCount=0;
+ let newRecords=[];
+
+ d.records.forEach(r=>{
+  if(
+   r.initial===initial &&
+   r.status!=='Cancelled' &&
+   r.status!=='Rejected' &&
+   ['AL','AM','PM','EL','CL'].includes(r.type) &&
+   mcDates.some(date=>eachDate(r.from,r.to).includes(date))
+  ){
+   const originalDates=eachDate(r.from,r.to);
+   const remainingDates=originalDates.filter(date=>!mcDates.includes(date));
+
+   // Cancel original record for audit trail
+   r.status='Cancelled';
+   r.cancelledBy='MC';
+   r.cancelledOn=iso(new Date());
+   r.notes=(r.notes?r.notes+' ':'')+'Partially/fully auto-cancelled because staff submitted MC for overlapping date(s).';
+   cancelledCount++;
+
+   // Re-create remaining leave date groups so only MC date(s) are replaced
+   let groups=[];
+   let current=[];
+   remainingDates.forEach(date=>{
+    if(current.length===0){
+     current=[date];
+    }else{
+     const prev=fmt(current[current.length-1]);
+     const now=fmt(date);
+     prev.setDate(prev.getDate()+1);
+     if(iso(prev)===date){
+      current.push(date);
+     }else{
+      groups.push(current);
+      current=[date];
+     }
+    }
+   });
+   if(current.length)groups.push(current);
+
+   groups.forEach(g=>{
+    const member=d.members.find(m=>m.initial===initial);
+    const units=(r.type==='AM'||r.type==='PM')?0.5:workingDays(g[0],g[g.length-1],member);
+    if(units>0){
+     newRecords.push({
+      ...r,
+      id:Date.now()+Math.floor(Math.random()*1000000),
+      from:g[0],
+      to:g[g.length-1],
+      units,
+      status:'Approved',
+      notes:(r.notes||'')+' Remaining leave kept after MC replacement.',
+      cancelledBy:'',
+      cancelledOn:''
+     });
+    }
+   });
+  }
+ });
+
+ if(newRecords.length){
+  d.records.push(...newRecords);
+ }
+
+ save(d);
+ return cancelledCount;
+}
+
+function buildContiguousDateGroups(dates){
+ const groups=[];
+ let current=[];
+ dates.forEach(date=>{
+  if(current.length===0){
+   current=[date];
+  }else{
+   const prev=fmt(current[current.length-1]);
+   prev.setDate(prev.getDate()+1);
+   if(iso(prev)===date){
+    current.push(date);
+   }else{
+    groups.push(current);
+    current=[date];
+   }
+  }
+ });
+ if(current.length)groups.push(current);
+ return groups;
+}
+
+function submitMC(){
+ const d=data(), initial=$('mcStaff').value, date=$('mcDate').value, to=($('mcToDate')&&$('mcToDate').value)||date;
+ if(!date)return alert('Please choose MC date.');
+ const member=d.members.find(m=>m.initial===initial);
+ if(!isActiveMember(member))return alert('This staff is terminated and cannot submit MC.');
+ const allDates=eachDate(date,to);
+ const workingDates=allDates.filter(x=>isWorkingDay(x,member));
+ const mcWFHSet=new Set(selectedMCWFHDates());
+ const mcWFHDates=allDates.filter(x=>mcWFHSet.has(x));
+ const realMCDates=workingDates.filter(x=>!mcWFHSet.has(x));
+ const units=realMCDates.length;
+ if(workingDates.length<=0 && mcWFHDates.length<=0)return alert('Selected MC period has no working days for this staff. Please select MC-WFH date if staff is working from home.');
+ if(units<=0 && mcWFHDates.length<=0)return alert('Please select at least one actual MC or MC-WFH date.');
+
+ const cancelledCount=realMCDates.length ? cancelOverlappingLeaveForMC(initial,realMCDates[0],realMCDates[realMCDates.length-1]) : 0;
+
+ const latest=data();
+ const file=$('mcFile').files[0];
+ const fileName=file?file.name:'No file';
+ const remarks=$('mcRemarks').value;
+ const consultFee=Number(($('mcConsultFee')&&$('mcConsultFee').value)||0)||0;
+ const latestMember=latest.members.find(m=>m.initial===initial)||member;
+ const mcBal=Math.max(0,mcEntitlement(latestMember)-used(initial,'MC'));
+ const alBal=Math.max(0,alEntitlement(latestMember)+phInLieuBonus(latestMember)-used(initial,'AL'));
+ let remainingMC=mcBal;
+ let remainingAL=alBal;
+ const buckets={MC:[],AL:[],UPL:[]};
+
+ realMCDates.forEach(day=>{
+  if(remainingMC>=1){
+   buckets.MC.push(day);
+   remainingMC-=1;
+  }else if(remainingAL>=1){
+   buckets.AL.push(day);
+   remainingAL-=1;
+  }else{
+   buckets.UPL.push(day);
+  }
+ });
+
+ const baseId=Date.now();
+ const noteParts=[];
+ if(buckets.AL.length) noteParts.push(buckets.AL.length+' day(s) exceeded MC entitlement and deducted as Annual Leave.');
+ if(buckets.UPL.length) noteParts.push(buckets.UPL.length+' day(s) exceeded MC/AL entitlement and captured as Unpaid Leave.');
+ const autoNote=noteParts.join(' ');
+
+ const createdRecordIds=[];
+ const createRecords=(type,dates,offset,label)=>{
+  buildContiguousDateGroups(dates).forEach((g,idx)=>{
+   const recordId=baseId+offset+idx;
+   createdRecordIds.push(recordId);
+   latest.records.push({
+    id:recordId,
+    initial,
+    type,
+    from:g[0],
+    to:g[g.length-1],
+    reason:remarks,
+    units:g.length,
+    status:'Approved',
+    file:fileName,
+    consultFee:consultFee,
+    notes:label+(autoNote?' '+autoNote:'')
+   });
+  });
+ };
+
+ createRecords('MC',buckets.MC,0,'MC submitted.');
+ createRecords('AL',buckets.AL,1000,'Auto deducted from Annual Leave due to exceeded MC entitlement.');
+ createRecords('UPL',buckets.UPL,2000,'Auto captured as Unpaid Leave due to exceeded MC and AL entitlement.');
+ createRecords('MCWFH',mcWFHDates,2500,'MC-WFH submitted. No MC deduction and no covering required.');
+
+ if(!latest.mcClaims)latest.mcClaims=[];
+ latest.mcClaims.push({
+  id:baseId+3000,
+  recordIds:createdRecordIds,
+  initial,
+  from:date,
+  to:to,
+  amount:consultFee,
+  remarks,
+  file:fileName,
+  status:'Unpaid',
+  submittedOn:iso(new Date()),
+  paidOn:''
+ });
+
+ save(latest);
+
+ $('mcDate').value='';
+ if($('mcToDate')) $('mcToDate').value='';
+ if($('mcConsultFee')) $('mcConsultFee').value='';
+ $('mcRemarks').value='';
+ if($('mcFile')) $('mcFile').value='';
+ if($('mcPreview')) $('mcPreview').innerHTML='Select MC date to preview deduction.';
+ if($('mcWFHOptions')){$('mcWFHOptions').innerHTML='';$('mcWFHOptions').classList.add('hide');}
+
+ const breakdown=[];
+ if(buckets.MC.length)breakdown.push(buckets.MC.length+' MC');
+ if(buckets.AL.length)breakdown.push(buckets.AL.length+' AL');
+ if(buckets.UPL.length)breakdown.push(buckets.UPL.length+' Unpaid Leave');
+ if(mcWFHDates.length)breakdown.push(mcWFHDates.length+' MC-WFH');
+ alert('MC submitted. Deduction breakdown: '+breakdown.join(', ')+'. '+(cancelledCount>0?cancelledCount+' overlapping leave record(s) were automatically cancelled and replaced by MC. ':'')+'File name recorded: '+fileName+(consultFee>0?'. Consultation fee: $'+consultFee.toFixed(2):''));
+ renderAll();
+}
+
+
+
+
+
+
+
+
+function approve(id,status){
+ if(!isAdministrator())return alert('Only Administrator can approve or reject leave.');const d=data(); let r=d.records.find(x=>x.id===id); if(r){r.status=status;save(d);renderAll()}}
+
+
+
+function resetMemberForm(){
+ $('mName').value='';
+ $('mInitial').value='';
+ $('mJoin').value='';
+ if($('mConfirmDate')) $('mConfirmDate').value='';
+ $('mBirthday').value='';
+ if($('mChild1Name')) $('mChild1Name').value='';
+ if($('mChild1DOB')) $('mChild1DOB').value='';
+ if($('mChild2Name')) $('mChild2Name').value='';
+ if($('mChild2DOB')) $('mChild2DOB').value='';
+ if($('mChild3Name')) $('mChild3Name').value='';
+ if($('mChild3DOB')) $('mChild3DOB').value='';
+ $('mType').value='CSO';
+ $('mWeek').value='5';
+ $('mPacker').value='No';
+ if($('mLocation')) $('mLocation').value='Local';
+ if($('mBuddyType')) $('mBuddyType').value='Local CSO';
+ if($('mCalendarView')) $('mCalendarView').value='All';
+ if($('mStatus')) $('mStatus').value='Active';
+ if($('mTerminationDate')) $('mTerminationDate').value='';
+ if($('mWpExpiry')) $('mWpExpiry').value='';
+ $('mAL').value='';
+ updateAutoALPreview();
+ window.editingInitial=null;
+ if($('memberSaveBtn')) $('memberSaveBtn').textContent='Add Member';
+ if($('memberCancelEditBtn')) $('memberCancelEditBtn').classList.add('hide');
+}
+function cancelMemberEdit(){
+ resetMemberForm();
+}
+
+function editMember(initial){
+ const d=data();
+ const m=d.members.find(x=>x.initial===initial);
+ if(!m){
+  alert('Member record not found.');
+  return;
+ }
+
+ showTab('members');
+
+ setTimeout(function(){
+  $('mName').value=m.name||'';
+  $('mInitial').value=m.initial||'';
+  $('mType').value=m.type||'CSO';
+  $('mJoin').value=m.join||'';
+  if($('mConfirmDate')) $('mConfirmDate').value=m.confirmDate||'';
+  $('mBirthday').value=m.birthday||'';
+  const kids=m.children||[];
+  if($('mChild1Name')) $('mChild1Name').value=kids[0]?.name||'';
+  if($('mChild1DOB')) $('mChild1DOB').value=kids[0]?.dob||'';
+  if($('mChild2Name')) $('mChild2Name').value=kids[1]?.name||'';
+  if($('mChild2DOB')) $('mChild2DOB').value=kids[1]?.dob||'';
+  if($('mChild3Name')) $('mChild3Name').value=kids[2]?.name||'';
+  if($('mChild3DOB')) $('mChild3DOB').value=kids[2]?.dob||'';
+  $('mWeek').value=m.week||'5';
+  $('mPacker').value=m.packer||'No';
+  if($('mLocation')) $('mLocation').value=m.location||'Local';
+  if($('mBuddyType')) $('mBuddyType').value=m.buddyType||(m.initial==='TSH'?'Remote Lead':((m.location||'Local')==='Remote'?'Remote CSO':'Local CSO'));
+  if($('mCalendarView')) $('mCalendarView').value=m.calendarView||'All';
+  if($('mStatus')) $('mStatus').value=m.status||'Active';
+  if($('mTerminationDate')) $('mTerminationDate').value=m.terminationDate||'';
+  if($('mWpExpiry')) $('mWpExpiry').value=m.wpExpiry||'';
+  updateAutoALPreview();
+  $('mAL').value=(m.alOverride!==undefined && m.alOverride!==null && m.alOverride!=='')?m.alOverride:'';
+  window.editingInitial=initial;
+
+  if($('memberSaveBtn')) $('memberSaveBtn').textContent='Update Member';
+  if($('memberCancelEditBtn')) $('memberCancelEditBtn').classList.remove('hide');
+
+  $('mName').scrollIntoView({behavior:'smooth',block:'start'});
+ },80);
+}
+
+
+function collectChildrenFromForm(){
+ return [
+  {name:($('mChild1Name')&&$('mChild1Name').value.trim())||'',dob:($('mChild1DOB')&&$('mChild1DOB').value)||''},
+  {name:($('mChild2Name')&&$('mChild2Name').value.trim())||'',dob:($('mChild2DOB')&&$('mChild2DOB').value)||''},
+  {name:($('mChild3Name')&&$('mChild3Name').value.trim())||'',dob:($('mChild3DOB')&&$('mChild3DOB').value)||''}
+ ].filter(c=>c.name||c.dob);
+}
+
+function addMember(){
+ const d=data();
+ const initial=$('mInitial').value.trim().toUpperCase();
+ const name=$('mName').value.trim();
+
+ if(!initial||!name)return alert('Name and initial required');
+
+ if(window.editingInitial){
+  const idx=d.members.findIndex(x=>x.initial===window.editingInitial);
+  if(idx>-1){
+   if(initial!==window.editingInitial && d.members.some(x=>x.initial===initial)){
+    alert('This initial already exists. Please use another initial.');
+    return;
+   }
+
+   d.members[idx]={...d.members[idx],
+    name:name,
+    initial:initial,
+    type:$('mType').value,
+    join:$('mJoin').value,
+    confirmDate:($('mConfirmDate')&&$('mConfirmDate').value)||'',
+    birthday:$('mBirthday').value,
+    children:collectChildrenFromForm(),
+    week:$('mWeek').value,
+    packer:$('mPacker').value,
+    location:($('mLocation')&&$('mLocation').value)||'Local',
+  buddyType:($('mBuddyType')&&$('mBuddyType').value)||'Local CSO',
+    buddyType:($('mBuddyType')&&$('mBuddyType').value)||'Local CSO',
+    calendarView:($('mCalendarView')&&$('mCalendarView').value)||'All',
+    status:($('mStatus')&&$('mStatus').value)||'Active',
+    terminationDate:($('mTerminationDate')&&$('mTerminationDate').value)||'',
+    wpExpiry:($('mWpExpiry')&&$('mWpExpiry').value)||'',
+    alOverride:($('mAL').value!==''?+$('mAL').value:'')
+   };
+
+   save(d);
+   resetMemberForm();
+   renderAll();
+   alert('Member updated.');
+   return;
+  }
+ }
+
+ if(d.members.some(x=>x.initial===initial)){
+  alert('This initial already exists. Use Edit to update this member, or click Cancel Edit / Add New Staff before adding.');
+  return;
+ }
+
+ d.members.push({
+  name:name,
+  initial:initial,
+  type:$('mType').value,
+  join:$('mJoin').value,
+  confirmDate:($('mConfirmDate')&&$('mConfirmDate').value)||'',
+  birthday:$('mBirthday').value,
+  children:collectChildrenFromForm(),
+  week:$('mWeek').value,
+  packer:$('mPacker').value,
+  location:($('mLocation')&&$('mLocation').value)||'Local',
+  calendarView:($('mCalendarView')&&$('mCalendarView').value)||'All',
+  status:($('mStatus')&&$('mStatus').value)||'Active',
+  terminationDate:($('mTerminationDate')&&$('mTerminationDate').value)||'',
+  wpExpiry:($('mWpExpiry')&&$('mWpExpiry').value)||'',
+  alOverride:($('mAL').value!==''?+$('mAL').value:''),
+  password:'123',
+  mustChangePassword:true
+ });
+
+ save(d);
+ resetMemberForm();
+ renderAll();
+ alert('Member added. Temporary password is 123. Staff must change password on first login.');
+}
+function resetStaffPassword(initial){
+ if(!isAdministrator())return alert('Only Administrator can reset staff password.');
+ const d=data();
+ const m=d.members.find(x=>x.initial===initial);
+ if(!m)return alert('Member not found.');
+ if(!confirm('Reset password for '+m.name+' ('+m.initial+') to temporary password 123? Staff will be required to change password on next login.'))return;
+ m.password='123';
+ m.mustChangePassword=true;
+ save(d);
+ renderAll();
+ alert('Password reset. Temporary password is 123. Staff must change password on next login.');
+}
+function delMember(initial){if(!confirm('Delete '+initial+'?'))return; const d=data(); d.members=d.members.filter(m=>m.initial!==initial); save(d);renderAll()}
+function loadSettings(){const d=data();$('setAL').value=d.settings.defaultAL;$('setWFH').value=d.settings.wfhSequence.map(row=>(Array.isArray(row)?row.join('+'):row)).join(',');$('setRemarks').value=d.settings.remarks;if($('setCalendarView'))$('setCalendarView').value=d.settings.calendarView||'All'}
+function saveSettings(){const d=data();d.settings.defaultAL=+$('setAL').value||14;d.settings.calendarView=$('setCalendarView')?$('setCalendarView').value:(d.settings.calendarView||'All');d.settings.wfhStartIndex=8;d.settings.wfhSequence=$('setWFH').value.split(',').map(x=>x.trim().toUpperCase()).filter(Boolean).map(x=>x.split('+').map(y=>y.trim()).filter(Boolean));d.settings.remarks=$('setRemarks').value;save(d);renderAll();alert('Settings saved')}
+
+function availablePublicHolidayYears(){
+ const d=data();
+ const years=new Set(Object.keys(d.publicHolidays||{}));
+ const currentYear=new Date().getFullYear();
+ [currentYear-1,currentYear,currentYear+1,currentYear+2].forEach(y=>years.add(String(y)));
+ return Array.from(years).sort();
+}
+function renderPublicHolidayEditor(){
+ if(!$('phYear')||!isAdministrator())return;
+ const d=data();
+ const selected=$('phYear').value||String(viewDate.getFullYear());
+ const years=availablePublicHolidayYears();
+ if(!$('phYear').innerHTML || !years.some(y=>y===$('phYear').value)){
+  $('phYear').innerHTML=years.map(y=>`<option value="${y}">${y}</option>`).join('');
+ }
+ $('phYear').value=years.includes(selected)?selected:String(viewDate.getFullYear());
+ if(!$('phYear').value)$('phYear').value=years[0];
+ const year=$('phYear').value;
+ const list=((d.publicHolidays||{})[year]||[]).slice().sort((a,b)=>a[0].localeCompare(b[0])||a[1].localeCompare(b[1]));
+ if($('phList')){
+  $('phList').innerHTML=list.map(p=>`<div class="phItem"><div><b>${p[0]}</b><div class="muted">${p[1]}</div></div><button class="danger small" type="button" onclick="deletePublicHoliday('${p[0]}')">Delete</button></div>`).join('')||'<div class="muted">No public holidays added for this year yet. Add them once MOM releases the official dates.</div>';
+ }
+}
+function addPublicHoliday(){
+ if(!isAdministrator())return alert('Only Administrator can update public holidays.');
+ const date=$('phDate').value;
+ const name=$('phName').value.trim();
+ if(!date||!name)return alert('Please enter both public holiday date and name.');
+ const d=data();
+ const year=date.slice(0,4);
+ if(!d.publicHolidays)d.publicHolidays={};
+ if(!d.publicHolidays[year])d.publicHolidays[year]=[];
+ d.publicHolidays[year]=d.publicHolidays[year].filter(p=>p[0]!==date);
+ d.publicHolidays[year].push([date,name]);
+ d.publicHolidays[year].sort((a,b)=>a[0].localeCompare(b[0])||a[1].localeCompare(b[1]));
+ save(d);
+ $('phDate').value='';$('phName').value='';
+ if($('phYear'))$('phYear').value=year;
+ renderAll();
+ alert('Public holiday saved.');
+}
+function deletePublicHoliday(date){
+ if(!isAdministrator())return alert('Only Administrator can update public holidays.');
+ if(!confirm('Delete this public holiday?'))return;
+ const d=data();
+ const year=date.slice(0,4);
+ if(d.publicHolidays&&d.publicHolidays[year])d.publicHolidays[year]=d.publicHolidays[year].filter(p=>p[0]!==date);
+ save(d);
+ renderAll();
+}
+
+
+function getMemberFormPreviewObject(){
+ const join=$('mJoin')?$('mJoin').value:'';
+ const confirmDate=$('mConfirmDate')?$('mConfirmDate').value:'';
+ const terminationDate=$('mTerminationDate')?$('mTerminationDate').value:'';
+ const location=$('mLocation')?$('mLocation').value:'Local';
+ const alOverride=$('mAL')&&$('mAL').value!==''?+$('mAL').value:'';
+ return {join,confirmDate,terminationDate,location,alOverride};
+}
+function updateAutoALPreview(){
+ if(!$('autoALPreview'))return;
+ const m=getMemberFormPreviewObject();
+ const auto=autoALEntitlement(m);
+ const base=alBaseEntitlement(m);
+ const max=maxALCap(m);
+ const start=alEffectiveStartDate(m)||'Not confirmed yet';
+ $('autoALPreview').innerHTML=`Current year entitlement: <b>${auto.toFixed(1).replace('.0','')} day(s)</b> · Base ${base} days · Maximum ${max} days · Effective from ${start}`;
+}
+function changePassword(){
+ const oldP=$('oldPassword').value;
+ const newP=$('newPassword').value;
+ const confirmP=$('confirmPassword').value;
+
+ if(!oldP||!newP||!confirmP)return alert('Please complete all password fields.');
+ if(newP!==confirmP)return alert('New password and confirm password do not match.');
+ if(newP.length<3)return alert('Password must be at least 3 characters.');
+
+ const d=data();
+
+ if(currentUser && currentUser.username==='administrator'){
+   if(oldP!==(d.settings.adminPassword||'admin123')){
+     return alert('Current password is incorrect.');
+   }
+
+   d.settings.adminPassword=newP;
+   save(d);
+
+   $('oldPassword').value='';
+   $('newPassword').value='';
+   $('confirmPassword').value='';
+
+   return alert('Administrator password updated successfully.');
+ }
+
+ const m=d.members.find(x=>x.initial===currentUser.initial);
+
+ if(!m)return alert('User account not found.');
+
+ if((m.password||'123')!==oldP){
+   return alert('Current password is incorrect.');
+ }
+
+ m.password=newP;
+ m.mustChangePassword=false;
+
+ save(d);
+
+ currentUser=m;
+
+ $('oldPassword').value='';
+ $('newPassword').value='';
+ $('confirmPassword').value='';
+
+ alert('Password updated successfully.');
+}
+function renderWPReminder(){
+ if(!$('wpReminderBox'))return;
+ if(!isAdministrator()){$('wpReminderBox').classList.add('hide');return;}
+ const today=new Date(); today.setHours(0,0,0,0);
+ const limit=new Date(today); limit.setMonth(limit.getMonth()+3);
+ const d=data();
+ const due=activeMembers(d.members).filter(m=>m.wpExpiry).map(m=>{
+  const exp=fmt(m.wpExpiry); exp.setHours(0,0,0,0);
+  const days=Math.ceil((exp-today)/(1000*60*60*24));
+  return {...m,days};
+ }).filter(m=>m.days>=0 && m.days<=92).sort((a,b)=>a.wpExpiry.localeCompare(b.wpExpiry));
+ if(!due.length){$('wpReminderBox').classList.add('hide');return;}
+ $('wpReminderBox').classList.remove('hide');
+ $('wpReminderBox').innerHTML='<b>WP/SP Renewal Reminder</b><br>'+due.map(m=>`${m.initial} - ${m.name}: expires on ${m.wpExpiry} (${m.days} day(s) left)`).join('<br>');
+}
+
+function moveMonth(n){viewDate.setMonth(viewDate.getMonth()+n);renderCalendar();renderKPI()}
+
+function getCalendarWFHList(date){
+ const d=data();
+ let list=getBaseWFHList(date).slice();
+
+ (d.wfhRequests||[]).forEach(r=>{
+  if(r.status!=='Approved') return;
+
+  if(r.requestType==='special'){
+   if(date===r.newDate && !list.includes(r.initial)) list.push(r.initial);
+   return;
+  }
+
+  const req=r.initial;
+  let swap=r.swapWith;
+
+  if(!swap){
+   const candidates=getBaseWFHList(r.newDate).filter(x=>sameTypeWFHSwapAllowed(req,x));
+   swap=candidates[0];
+  }
+  if(!swap) return;
+
+  if(date===r.originalDate){
+   list=list.filter(x=>x!==req);
+   if(!list.includes(swap)) list.push(swap);
+  }
+
+  if(date===r.newDate){
+   list=list.filter(x=>x!==swap);
+   if(!list.includes(req)) list.push(req);
+  }
+ });
+
+ (d.wfhOverrides||[]).filter(o=>o.date===date).forEach(o=>{
+  if(o.initial && !list.includes(o.initial)) list.push(o.initial);
+ });
+
+ list=list.filter(x=>x==='NEEDS_REASSIGN' || !isWFHRemoved(date,x));
+
+ const members=data().members||[];
+ const filtered=list.filter(x=>x==='NEEDS_REASSIGN' || isLocalWFHEligible(members.find(m=>m.initial===x)));
+ if(list.length>0 && filtered.length===0) return ['NEEDS_REASSIGN'];
+ return filtered;
+}
+
+function isSpecialApprovedWFH(date, initial){
+ const d=data();
+ return (d.wfhRequests||[]).some(r=>r.status==='Approved' && r.requestType==='special' && r.newDate===date && r.initial===initial);
+}
+
+function isCalendarWFHChanged(date, initial){
+ const base=getBaseWFHList(date);
+ return !base.includes(initial);
+}
+
+
+function getMemberLocation(initial){
+ const d=data();
+ const m=d.members.find(x=>x.initial===initial);
+ return (m&&m.location)||'Local';
+}
+
+function isRemoteStaffUser(){
+ return currentUser && !isAdministrator() && getMemberLocation(currentUser.initial)==='Remote';
+}
+
+function canShowAbsenceOnCalendar(initial){
+ // Remote staff need to see all staff leave / MC / birthday / urgent leave / covering
+ // so they know who can take customer calls. WFH planning is handled separately below.
+ if(isRemoteStaffUser())return true;
+ return canShowInitialOnCalendar(initial);
+}
+
+function canShowWFHOnCalendar(initial){
+ // Remote staff are already WFH, so hide WFH planning from their calendar view.
+ if(isRemoteStaffUser())return false;
+ return canShowInitialOnCalendar(initial);
+}
+
+function shouldShowWFHPlanningOnCalendar(){
+ return !isRemoteStaffUser();
+}
+
+function currentCalendarViewFilter(){
+ const d=data();
+ if(isAdministrator()){
+  return (d.settings&&d.settings.calendarView)||'All';
+ }
+ if(currentUser){
+  const viewer=d.members.find(m=>m.initial===currentUser.initial);
+  return (viewer&&viewer.calendarView)||'All';
+ }
+ return 'All';
+}
+
+function canShowInitialOnCalendar(initial){
+ const d=data();
+ let filter='All';
+
+ if(currentUser && isAdministrator()){
+  filter=(d.settings&&d.settings.calendarView)||'All';
+ }else if(currentUser){
+  const viewer=d.members.find(m=>m.initial===currentUser.initial);
+  filter=(viewer&&viewer.calendarView)||'All';
+ }
+
+ if(filter==='All')return true;
+ return getMemberLocation(initial)===filter;
+}
+
+
+function calendarLeaveLabel(r){
+ if(!r)return 'AL';
+
+ if(r.type==='EL')return 'Urgent AL';
+ if(r.type==='CCL')return 'CCL';
+ if(r.type==='CCLAM')return 'CCL AM';
+ if(r.type==='CCLPM')return 'CCL PM';
+ if(r.type==='UPL')return 'Unpaid Leave';
+ if(r.type==='MCWFH')return 'MC-WFH (No Covering)';
+
+ if(['AL','AM','PM'].includes(r.type)){
+  const n=(r.notes||'').toLowerCase();
+  const isWithin7Days=n.includes('within 7 days');
+  return isWithin7Days ? 'Urgent AL' : r.type;
+ }
+
+ return r.type||'AL';
+}
+
+
+function isLeaveTypeForBuddy(type){
+ return ['AL','EL','AM','PM','MC','CL','CCL','CCLAM','CCLPM','UPL'].includes(type);
+}
+
+/* Buddy System performance + accumulated fairness fix:
+   - Coverage count is now accumulated across all approved Leave / MC records and Birthday Off coverage, not only the selected week/month.
+   - Allocation fairness uses the accumulated running count before the date being assigned.
+   - Terminated / inactive staff are excluded from buddy allocation and from the accumulated total table. */
+let buddyWeekOffset=0;
+let buddyCache={key:'',data:null,members:null,records:null,absences:{},timeline:null,stats:null};
+
+function getBuddyCache(){
+ const raw=localStorage.staffPlannerStaffMasterV2 || JSON.stringify(defaults);
+ const key=raw+'|buddyWindowStart='+iso(new Date());
+ if(buddyCache.key!==key){
+   buddyCache={key:key,data:normalizeData(JSON.parse(raw)),members:null,records:null,absences:{},timeline:null,stats:null};
+ }
+ return buddyCache;
+}
+function buddyData(){return getBuddyCache().data;}
+function isMemberActiveForBuddy(member){
+ if(!member)return false;
+ const status=String(member.status||member.staffStatus||member.employeeStatus||member.memberStatus||'').toLowerCase();
+ if(status==='terminated'||status==='inactive'||status==='resigned')return false;
+ if(member.terminated===true||member.isTerminated===true||member.active===false)return false;
+ if(member.type==='Administrator')return false;
+ return true;
+}
+function buddyMembers(){
+ const c=getBuddyCache();
+ if(!c.members)c.members=(c.data.members||[]).filter(isMemberActiveForBuddy);
+ return c.members;
+}
+function buddyRecords(){
+ const c=getBuddyCache();
+ if(!c.records){
+   const activeInitials=new Set(buddyMembers().map(m=>m.initial));
+   c.records=(c.data.records||[]).filter(r=>
+    activeInitials.has(r.initial) &&
+    r.status==='Approved' &&
+    r.status!=='Cancelled' &&
+    r.status!=='Rejected' &&
+    isLeaveTypeForBuddy(r.type)
+   );
+ }
+ return c.records;
+}
+function activeAbsenceRecordsOnDate(date){
+ const c=getBuddyCache();
+ if(!c.absences[date]){
+   const list=buddyRecords().filter(r=>eachDate(r.from,r.to).includes(date));
+   const year=fmt(date).getFullYear();
+   buddyMembers().forEach(m=>{
+    if(birthdayOff(m,year)===date){
+     list.push({id:'BDAY-'+m.initial+'-'+date,initial:m.initial,type:'BDAY',from:date,to:date,status:'Approved',reason:'Birthday Off'});
+    }
+   });
+   c.absences[date]=list;
+ }
+ return c.absences[date];
+}
+function isAbsentForBuddy(initial,date){
+ return activeAbsenceRecordsOnDate(date).some(r=>r.initial===initial);
+}
+function buddyTypeOf(member){
+ if(!member)return '';
+ return member.buddyType || (member.initial==='TSH'?'Remote Lead':((member.location||'Local')==='Remote'?'Remote CSO':'Local CSO'));
+}
+function isLocalBuddyCSO(member){
+ return member && member.type==='CSO' && buddyTypeOf(member)==='Local CSO';
+}
+function isRemoteLead(member){
+ return member && buddyTypeOf(member)==='Remote Lead';
+}
+function isRemoteBuddyCSO(member){
+ return member && member.type==='CSO' && buddyTypeOf(member)==='Remote CSO';
+}
+function localCSOAbsentList(date){
+ return buddyMembers().filter(m=>isLocalBuddyCSO(m) && isAbsentForBuddy(m.initial,date));
+}
+function remoteCSOAbsentList(date){
+ return buddyMembers().filter(m=>isRemoteBuddyCSO(m) && isAbsentForBuddy(m.initial,date));
+}
+function availableLocalCSOPool(date,exclude=[]){
+ return buddyMembers().filter(m=>
+   isLocalBuddyCSO(m) &&
+   !exclude.includes(m.initial) &&
+   !isAbsentForBuddy(m.initial,date)
+ );
+}
+function sortBuddyPoolByAccumulated(pool,runningCounts){
+ return pool.slice().sort((a,b)=>{
+   const ca=runningCounts[a.initial]||0;
+   const cb=runningCounts[b.initial]||0;
+   if(ca!==cb)return ca-cb;
+   return a.initial.localeCompare(b.initial);
+ });
+}
+function addBuddyRunningCount(initial,runningCounts,stats,coverType){
+ runningCounts[initial]=(runningCounts[initial]||0)+1;
+ if(!stats[initial])stats[initial]={local:0,remote:0,total:0};
+ stats[initial][coverType]=(stats[initial][coverType]||0)+1;
+ stats[initial].total=(stats[initial].total||0)+1;
+}
+
+function approvedCoverSwapFor(date,absent,fromCover){
+ const d=buddyData();
+ return (d.coverSwapRequests||[]).find(r=>
+  r.status==='Approved' &&
+  r.date===date &&
+  r.absent===absent &&
+  r.fromCover===fromCover
+ );
+}
+
+function adminCoverOverrideFor(date,absent){
+ const d=buddyData();
+ return (d.adminCoverOverrides||[]).find(r=>
+  r.status==='Active' &&
+  r.date===date &&
+  r.absent===absent
+ );
+}
+function applyAdminLocalCoverOverrides(date,assignments){
+ return assignments.map(a=>{
+  const override=adminCoverOverrideFor(date,a.absent);
+  if(!override)return a;
+  return {...a,originalCover:a.cover,cover:override.toCover,adminOverride:true,adminOverrideId:override.id,mode:(a.mode||'')+' Admin Changed'};
+ });
+}
+function applyApprovedLocalCoverSwaps(date,assignments){
+ return assignments.map(a=>{
+  const swap=approvedCoverSwapFor(date,a.absent,a.cover);
+  if(!swap)return a;
+  return {...a,originalCover:a.cover,cover:swap.toCover,swapId:swap.id,mode:(a.mode||'')+' Swapped'};
+ });
+}
+function isLocalCSOCurrentUser(){
+ if(!currentUser||isAdministrator())return false;
+ const d=data();
+ const m=d.members.find(x=>x.initial===currentUser.initial);
+ return isLocalBuddyCSO(m);
+}
+function localCoverAssignmentsForStaff(initial){
+ const timeline=getBuddyTimeline();
+ const rows=[];
+ Object.keys(timeline.local||{}).sort().forEach(date=>{
+  (timeline.local[date]||[]).forEach(a=>{
+   if(a.cover===initial){
+    rows.push({date,absent:a.absent,cover:a.cover,mode:a.mode,originalCover:a.originalCover||''});
+   }
+  });
+ });
+ return rows;
+}
+function refreshCoverSwapAssignmentOptions(){
+ const sel=$('coverSwapAssignment');
+ if(!sel)return;
+ sel.innerHTML='';
+ if(!isLocalCSOCurrentUser()){
+  const opt=new Option('Only Local CSO can request covering swap','');
+  sel.add(opt);
+  refreshCoverSwapTargetOptions();
+  return;
+ }
+ const today=iso(new Date());
+ const rows=localCoverAssignmentsForStaff(currentUser.initial).filter(a=>a.date>=today);
+ rows.forEach(a=>{
+  const label=`${a.date} - You cover ${a.absent}${a.mode&&a.mode.includes('1-to-2')?' (1-to-2)':''}`;
+  sel.add(new Option(label,`${a.date}|${a.absent}|${a.cover}`));
+ });
+ if(!rows.length)sel.add(new Option('No upcoming covering assignment available',''));
+ refreshCoverSwapTargetOptions();
+}
+function refreshCoverSwapTargetOptions(){
+ const target=$('coverSwapTarget');
+ if(!target)return;
+ target.innerHTML='';
+ const val=$('coverSwapAssignment')?$('coverSwapAssignment').value:'';
+ if(!val){target.add(new Option('No available target',''));return;}
+ const [date,absent,cover]=val.split('|');
+ const d=data();
+ const pendingTargets=new Set((d.coverSwapRequests||[]).filter(r=>r.status==='Pending Staff Approval'&&r.date===date&&r.absent===absent).map(r=>r.toCover));
+ const pool=buddyMembers().filter(m=>
+  isLocalBuddyCSO(m) &&
+  m.initial!==cover &&
+  m.initial!==absent &&
+  !isAbsentForBuddy(m.initial,date) &&
+  !pendingTargets.has(m.initial)
+ );
+ pool.sort((a,b)=>a.initial.localeCompare(b.initial)).forEach(m=>target.add(new Option(`${m.initial} - ${m.name}`,m.initial)));
+ if(!pool.length)target.add(new Option('No available Local CSO',''));
+}
+function submitCoverSwapRequest(){
+ if(!isLocalCSOCurrentUser())return alert('Only Local CSO can request covering swap.');
+ const assignment=$('coverSwapAssignment').value;
+ const toCover=$('coverSwapTarget').value;
+ const reason=$('coverSwapReason').value.trim();
+ if(!assignment)return alert('Please choose your covering assignment.');
+ if(!toCover)return alert('Please choose the Local CSO to swap with.');
+ const [date,absent,fromCover]=assignment.split('|');
+ if(fromCover!==currentUser.initial)return alert('You can only swap your own covering assignment.');
+ const current=localBuddyAssignmentsForDate(date).find(a=>a.absent===absent&&a.cover===fromCover);
+ if(!current)return alert('This covering assignment is no longer assigned to you. Please refresh and try again.');
+ if(isAbsentForBuddy(toCover,date))return alert('Selected CSO is not available on this date.');
+ const d=data();
+ if(!d.coverSwapRequests)d.coverSwapRequests=[];
+ const existing=d.coverSwapRequests.some(r=>r.status==='Pending Staff Approval'&&r.date===date&&r.absent===absent&&r.fromCover===fromCover&&r.toCover===toCover);
+ if(existing)return alert('This cover swap request is already pending.');
+ d.coverSwapRequests.push({id:Date.now(),date,absent,fromCover,toCover,reason,status:'Pending Staff Approval'});
+ save(d);
+ $('coverSwapReason').value='';
+ renderAll();
+ alert('Cover swap request sent to '+toCover+' for approval.');
+}
+function approveCoverSwapRequest(id,status){
+ const d=data();
+ const r=(d.coverSwapRequests||[]).find(x=>x.id===id);
+ if(!r)return;
+ if(!currentUser || currentUser.initial!==r.toCover){
+  return alert('Only the receiving Local CSO can approve or reject this cover swap.');
+ }
+ if(r.status!=='Pending Staff Approval')return alert('This cover swap request has already been handled.');
+ if(status==='Approved'){
+  const toMember=d.members.find(m=>m.initial===r.toCover);
+  if(!isLocalBuddyCSO(toMember))return alert('Approval failed: receiving staff is not Local CSO.');
+  if(isAbsentForBuddy(r.toCover,r.date))return alert('Approval failed: you are not available on this date.');
+  const current=localBuddyAssignmentsForDate(r.date).find(a=>a.absent===r.absent&&a.cover===r.fromCover);
+  if(!current)return alert('Approval failed: original covering assignment is no longer valid.');
+ }
+ r.status=status;
+ r.approvedBy=currentUser.initial;
+ r.approvedOn=iso(new Date());
+ save(d);
+ renderAll();
+}
+function cancelCoverSwapRequest(id){
+ const d=data();
+ const r=(d.coverSwapRequests||[]).find(x=>x.id===id);
+ if(!r)return;
+ const canCancel=isAdministrator() || (currentUser && (currentUser.initial===r.fromCover || (r.status==='Pending Staff Approval' && currentUser.initial===r.toCover)));
+ if(!canCancel)return alert('You do not have permission to cancel this cover swap request.');
+ if(r.status==='Rejected'||r.status==='Cancelled')return alert('This request is already closed.');
+ if(!confirm('Cancel this cover swap request?'))return;
+ r.status='Cancelled';
+ r.cancelledOn=iso(new Date());
+ r.cancelledBy=currentUser.initial;
+ save(d);
+ renderAll();
+}
+function renderCoverSwapRequests(){
+ if(!$('coverSwapList'))return;
+ if($('coverSwapFormBox'))$('coverSwapFormBox').style.display=isLocalCSOCurrentUser()?'block':'none';
+ refreshCoverSwapAssignmentOptions();
+ const d=data();
+ let list=[];
+ if(isAdministrator()){
+  list=(d.coverSwapRequests||[]).slice();
+ }else if(currentUser){
+  list=(d.coverSwapRequests||[]).filter(r=>r.fromCover===currentUser.initial||r.toCover===currentUser.initial);
+ }
+ list.sort((a,b)=>{
+  const ap=a.status==='Pending Staff Approval';
+  const bp=b.status==='Pending Staff Approval';
+  if(ap&&!bp)return -1;
+  if(!ap&&bp)return 1;
+  return (b.id||0)-(a.id||0);
+ });
+ let html='';
+ if(list.length){
+  html+=list.map(r=>{
+   const canApprove=currentUser && r.status==='Pending Staff Approval' && r.toCover===currentUser.initial;
+   const canCancel=r.status!=='Rejected'&&r.status!=='Cancelled'&&(isAdministrator() || (currentUser && (currentUser.initial===r.fromCover || (r.status==='Pending Staff Approval'&&currentUser.initial===r.toCover))));
+   const statusClass=String(r.status||'').toLowerCase().replace(/\s+/g,'');
+   return `<div class="item"><b>${r.date} - Cover ${r.absent}</b><div>${r.fromCover} → ${r.toCover}</div><div class="muted">${r.reason||''}</div><span class="status ${statusClass}">${r.status}</span>${canApprove?`<div class="row" style="margin-top:9px"><button class="ok small" onclick="approveCoverSwapRequest(${r.id},'Approved')">Approve Swap</button><button class="danger small" onclick="approveCoverSwapRequest(${r.id},'Rejected')">Reject Swap</button></div>`:''}${canCancel?`<div class="row" style="margin-top:9px"><button class="danger small" onclick="cancelCoverSwapRequest(${r.id})">Cancel</button></div>`:''}</div>`;
+  }).join('');
+ }
+ if(isAdministrator()){
+  const adminOverrides=(d.adminCoverOverrides||[]).slice().sort((a,b)=>(b.date||'').localeCompare(a.date||''));
+  if(adminOverrides.length){
+   html+=`<div class="notice"><b>Admin Manual Cover Changes</b></div>`;
+   html+=adminOverrides.map(r=>{
+    return `<div class="item"><b>${r.date} - Cover ${r.absent}</b><div>${r.fromCover} → ${r.toCover}</div><div class="muted">${r.reason||''}<br>Changed by: ${r.createdBy||'-'} ${r.createdOn||''}</div><span class="status approved">${r.status||'Active'}</span></div>`;
+   }).join('');
+  }
+ }
+ $('coverSwapList').innerHTML=html||'<div class="muted">No cover swap records yet.</div>';
+}
+
+function getBuddyTimeline(){
+ const c=getBuddyCache();
+ if(c.timeline)return c.timeline;
+
+ const stats={};
+ const runningCounts={};
+ const timeline={local:{},remote:{},stats};
+ buddyMembers().forEach(m=>{stats[m.initial]={local:0,remote:0,total:0};runningCounts[m.initial]=0;});
+
+ const dateSet=new Set();
+
+ const coverStart=new Date();
+ coverStart.setHours(0,0,0,0);
+
+ const coverEnd=new Date(coverStart);
+ coverEnd.setFullYear(coverEnd.getFullYear()+1);
+ coverEnd.setHours(23,59,59,999);
+
+ function isWithinBuddyCoverWindow(date){
+  const dt=fmt(date);
+  dt.setHours(0,0,0,0);
+  return dt>=coverStart && dt<=coverEnd;
+ }
+
+ buddyRecords().forEach(r=>{
+  eachDate(r.from,r.to).forEach(date=>{
+   if(isWithinBuddyCoverWindow(date))dateSet.add(date);
+  });
+ });
+
+ const years=new Set([coverStart.getFullYear(),coverEnd.getFullYear()]);
+ years.forEach(year=>{
+   buddyMembers().forEach(m=>{
+    const bd=birthdayOff(m,year);
+    if(bd && isWithinBuddyCoverWindow(bd))dateSet.add(bd);
+   });
+ });
+ const allDates=Array.from(dateSet).sort();
+
+ allDates.forEach(date=>{
+   const localAssignments=[];
+   const remoteAssignments=[];
+
+   const localAbsent=localCSOAbsentList(date);
+   if(localAbsent.length>0){
+     let pool=sortBuddyPoolByAccumulated(availableLocalCSOPool(date,[]),runningCounts);
+     const usedCover=new Set();
+
+     localAbsent.forEach(a=>{
+       const available=pool.find(p=>!usedCover.has(p.initial));
+       if(available){
+         localAssignments.push({absent:a.initial,cover:available.initial,mode:'1-to-1'});
+         usedCover.add(available.initial);
+       }
+     });
+
+     localAbsent.forEach(a=>{
+       if(localAssignments.some(x=>x.absent===a.initial))return;
+       const fallback=pool[localAssignments.length % pool.length];
+       if(fallback)localAssignments.push({absent:a.initial,cover:fallback.initial,mode:'1-to-2'});
+     });
+
+     const swappedLocalAssignments=applyApprovedLocalCoverSwaps(date,localAssignments);
+     const adminChangedLocalAssignments=applyAdminLocalCoverOverrides(date,swappedLocalAssignments);
+     localAssignments.splice(0,localAssignments.length,...adminChangedLocalAssignments);
+     localAssignments.forEach(a=>addBuddyRunningCount(a.cover,runningCounts,stats,'local'));
+   }
+
+   const remoteAbsent=remoteCSOAbsentList(date);
+   const remoteLead=buddyMembers().find(m=>isRemoteLead(m));
+
+   if(remoteAbsent.length>0 && remoteLead && !isAbsentForBuddy(remoteLead.initial,date)){
+     remoteAbsent.forEach(r=>{
+       remoteAssignments.push({remote:r.initial,cover:remoteLead.initial,mode:'Remote Lead'});
+       addBuddyRunningCount(remoteLead.initial,runningCounts,stats,'remote');
+     });
+   }else if(remoteLead && isAbsentForBuddy(remoteLead.initial,date)){
+     let pool=sortBuddyPoolByAccumulated(availableLocalCSOPool(date,[]),runningCounts);
+     const used=new Set();
+
+     const leadCover=pool.find(p=>!used.has(p.initial));
+     if(leadCover){
+       remoteAssignments.push({remote:remoteLead.initial,cover:leadCover.initial,mode:'Remote Lead Cover'});
+       used.add(leadCover.initial);
+       addBuddyRunningCount(leadCover.initial,runningCounts,stats,'remote');
+     }
+
+     remoteAbsent.forEach(r=>{
+       const available=pool.find(p=>!used.has(p.initial));
+       if(available){
+         remoteAssignments.push({remote:r.initial,cover:available.initial,mode:'Remote Escalation'});
+         used.add(available.initial);
+         addBuddyRunningCount(available.initial,runningCounts,stats,'remote');
+       }else if(pool.length){
+         const fallback=pool[remoteAssignments.length % pool.length];
+         remoteAssignments.push({remote:r.initial,cover:fallback.initial,mode:'Remote Escalation 1-to-2'});
+         addBuddyRunningCount(fallback.initial,runningCounts,stats,'remote');
+       }
+     });
+   }
+
+   timeline.local[date]=localAssignments;
+   timeline.remote[date]=remoteAssignments;
+ });
+
+ c.timeline=timeline;
+ c.stats=stats;
+ return c.timeline;
+}
+function localBuddyAssignmentsForDate(date){
+ return getBuddyTimeline().local[date]||[];
+}
+function remoteCoverAssignmentsForDate(date){
+ return getBuddyTimeline().remote[date]||[];
+}
+function buddyAccumulatedCoverageStats(){
+ return getBuddyTimeline().stats||{};
+}
+function buddyMonthCount(initial, year, monthIndex){
+ const stats=buddyAccumulatedCoverageStats();
+ return stats[initial]?.total||0;
+}
+function buddyCoverageStats(year,monthIndex,fastMode){
+ return buddyAccumulatedCoverageStats();
+}
+function buddyWeekStart(offset=0){
+ const now=new Date();
+ const day=now.getDay();
+ const mondayOffset=(day===0?-6:1-day);
+ const monday=new Date(now);
+ monday.setDate(now.getDate()+mondayOffset+(offset*7));
+ monday.setHours(0,0,0,0);
+ return monday;
+}
+function changeBuddyWeek(step){
+ buddyWeekOffset+=step;
+ renderBuddySystem(true);
+}
+
+function refreshAdminCoverChangeOptions(){
+ if(!$('adminCoverDate')||!isAdministrator())return;
+ const date=$('adminCoverDate').value;
+ const absentSel=$('adminCoverAbsent');
+ const newSel=$('adminCoverNew');
+ const currentBox=$('adminCoverCurrent');
+ if(!absentSel||!newSel||!currentBox)return;
+
+ absentSel.innerHTML='';
+ newSel.innerHTML='';
+ currentBox.textContent='Current cover: -';
+
+ if(!date){
+  absentSel.add(new Option('Select date first',''));
+  newSel.add(new Option('Select date first',''));
+  return;
+ }
+
+ const assignments=localBuddyAssignmentsForDate(date);
+ if(!assignments.length){
+  absentSel.add(new Option('No local covering required on this date',''));
+  newSel.add(new Option('No available cover',''));
+  return;
+ }
+
+ const previousAbsent=absentSel.dataset.selected || absentSel.value;
+ assignments.forEach(a=>{
+  absentSel.add(new Option(`${a.absent} currently covered by ${a.cover}`,a.absent));
+ });
+ if(previousAbsent && assignments.some(a=>a.absent===previousAbsent))absentSel.value=previousAbsent;
+
+ const selectedAbsent=absentSel.value;
+ absentSel.dataset.selected=selectedAbsent;
+ const current=assignments.find(a=>a.absent===selectedAbsent);
+
+ if(!current){
+  newSel.add(new Option('No available cover',''));
+  return;
+ }
+
+ currentBox.textContent=`Current cover: ${current.cover}${current.originalCover?' (changed from '+current.originalCover+')':''}`;
+
+ const pool=buddyMembers().filter(m=>
+  isLocalBuddyCSO(m) &&
+  m.initial!==selectedAbsent &&
+  m.initial!==current.cover &&
+  !isAbsentForBuddy(m.initial,date)
+ );
+
+ pool.sort((a,b)=>a.initial.localeCompare(b.initial)).forEach(m=>{
+  newSel.add(new Option(`${m.initial} - ${m.name}`,m.initial));
+ });
+
+ if(!pool.length)newSel.add(new Option('No available Local CSO',''));
+}
+
+function adminManualCoverChange(){
+ if(!isAdministrator())return alert('Only Administrator can change cover staff.');
+ const date=$('adminCoverDate').value;
+ const absent=$('adminCoverAbsent').value;
+ const toCover=$('adminCoverNew').value;
+ const reason=$('adminCoverReason').value.trim();
+
+ if(!date||!absent||!toCover)return alert('Please select date, absent staff and new cover staff.');
+
+ const current=localBuddyAssignmentsForDate(date).find(a=>a.absent===absent);
+ if(!current)return alert('No current covering assignment found for this date/staff.');
+
+ if(isAbsentForBuddy(toCover,date))return alert('Selected cover staff is not available on this date.');
+
+ const d=data();
+ if(!d.adminCoverOverrides)d.adminCoverOverrides=[];
+
+ d.adminCoverOverrides=d.adminCoverOverrides.filter(r=>!(r.status==='Active'&&r.date===date&&r.absent===absent));
+ d.adminCoverOverrides.push({
+  id:Date.now(),
+  date,
+  absent,
+  fromCover:current.cover,
+  toCover,
+  reason:reason||'Admin manual cover change',
+  status:'Active',
+  createdBy:currentUser.initial,
+  createdOn:iso(new Date())
+ });
+
+ save(d);
+ $('adminCoverReason').value='';
+ renderAll();
+ refreshAdminCoverChangeOptions();
+ alert('Cover staff changed successfully.');
+}
+
+function renderBuddySystem(force=false){
+ if(!$('buddyList'))return;
+ const panel=$('panel-buddy');
+ if(!force && panel && panel.classList.contains('hide'))return;
+
+ const startDate=buddyWeekStart(buddyWeekOffset);
+ const endDate=new Date(startDate);
+ endDate.setDate(startDate.getDate()+6);
+
+ if($('buddyWeekLabel')){
+  $('buddyWeekLabel').innerHTML=`${iso(startDate)} → ${iso(endDate)}`;
+ }
+
+ const stats=buddyAccumulatedCoverageStats();
+ const members=buddyMembers();
+
+ let statsHtml=`
+   <div class="card" style="margin-bottom:16px">
+     <h4>Accumulated Coverage Statistics</h4>
+     <div class="muted" style="margin-bottom:8px">Shows covering planned from today up to 1 year ahead for approved Leave / MC records and Birthday Off coverage. Terminated or inactive staff are hidden.</div>
+     <table class="table">
+       <tr>
+         <th>Staff</th>
+         <th>Buddy Type</th>
+         <th>Local Cover</th>
+         <th>Remote Cover</th>
+         <th>Total Cover</th>
+       </tr>
+ `;
+
+ Object.keys(stats).sort((a,b)=>{
+   const ta=stats[a]?.total||0;
+   const tb=stats[b]?.total||0;
+   if(ta!==tb)return ta-tb;
+   return a.localeCompare(b);
+ }).forEach(initial=>{
+   const member=members.find(m=>m.initial===initial);
+   if(!member)return;
+   const s=stats[initial];
+   if(s.total===0)return;
+   statsHtml+=`
+    <tr>
+      <td>${initial}</td>
+      <td>${buddyTypeOf(member)}</td>
+      <td>${s.local}</td>
+      <td>${s.remote}</td>
+      <td><b>${s.total}</b></td>
+    </tr>
+   `;
+ });
+
+ statsHtml+=`</table></div>`;
+
+ let htmlOut=statsHtml;
+
+ for(let d=0; d<7; d++){
+   const dt=new Date(startDate);
+   dt.setDate(startDate.getDate()+d);
+   const date=iso(dt);
+   const localAssignments=shouldShowLocalBuddyOnCalendar()?localBuddyAssignmentsForDate(date):[];
+   const remoteAssignments=remoteCoverAssignmentsForDate(date).filter(remoteCalendarBuddyVisible);
+
+   htmlOut+=`
+    <div class="card" style="margin-bottom:12px">
+      <h4>${date}</h4>
+   `;
+
+   if(localAssignments.length===0 && remoteAssignments.length===0){
+      htmlOut+=`<div class="muted">No buddy coverage required.</div>`;
+   }
+
+   localAssignments.forEach(a=>{
+      htmlOut+=`
+        <div style="margin-bottom:6px">
+          <span class="tag wfhchange">${a.cover} Cover ${a.absent}${a.mode&&a.mode.includes('1-to-2')?' (1-to-2)':''}${a.originalCover?' (Swapped from '+a.originalCover+')':''}</span>
+          <div class="muted">Buddy Type: Local CSO${a.adminOverride?' · Admin Manual Cover Change':(a.originalCover?' · Approved Cover Swap':'')}</div>
+        </div>
+      `;
+   });
+
+   remoteAssignments.forEach(a=>{
+      const label=a.remote==='TSH'?`${a.cover} Cover TSH`:`${a.cover} Remote Cover ${a.remote}`;
+      htmlOut+=`
+        <div style="margin-bottom:6px">
+          <span class="tag remotecover">${label}${a.mode&&a.mode.includes('1-to-2')?' (1-to-2)':''}</span>
+          <div class="muted">Buddy Type: ${a.mode||'Remote Coverage'}</div>
+        </div>
+      `;
+   });
+
+   htmlOut+=`</div>`;
+ }
+
+ $('buddyList').innerHTML=htmlOut;
+}
+
+
+function remoteCalendarBuddyVisible(assignment){
+ // Remote staff should see all covering duties, including local coverage,
+ // because they may need to transfer customer calls to available local staff.
+ if(isRemoteStaffUser())return true;
+
+ const filter=currentCalendarViewFilter();
+ if(filter!=='Remote')return true;
+ // For non-remote-view users using Remote filter, keep the earlier remote-only coverage view.
+ return assignment.cover==='TSH' || assignment.remote==='TSH';
+}
+
+function shouldShowLocalBuddyOnCalendar(){
+ if(isRemoteStaffUser())return true;
+ return currentCalendarViewFilter()!=='Remote';
+}
+
+
+
+
+function renderCalendar(){
+ const d=data(), y=viewDate.getFullYear(), m=viewDate.getMonth(); $('monthTitle').textContent=viewDate.toLocaleString('en-SG',{month:'long',year:'numeric'});
+ let html=['Mon','Tue','Wed','Thu','Fri','Sat','Sun'].map(x=>`<div class="dow">${x}</div>`).join('');
+ const first=new Date(y,m,1); let start=first.getDay(); start = start===0?6:start-1; last=new Date(y,m+1,0).getDate();
+ for(let i=0;i<start;i++) html+=`<div></div>`;
+ for(let day=1;day<=last;day++){
+  const date=iso(new Date(y,m,day)), wd=fmt(date).getDay(), tags=[];
+  const ph=isPH(date); if(ph)tags.push(`<span class="tag ph">PH - ${ph[1]}</span>`);
+  const block=getBlockout(date); if(block)tags.push(`<span class="tag blockout">Blocked - ${block.reason||'Event'}</span>`);
+  activeMembers(d.members).filter(mem=>canShowAbsenceOnCalendar(mem.initial)).forEach(mem=>{if(birthdayOff(mem,y)===date)tags.push(`<span class="tag bday">${mem.initial} - Birthday Off</span>`)});
+  activeMembers(d.members).filter(mem=>canShowAbsenceOnCalendar(mem.initial)).forEach(mem=>{const svc=serviceAnniversary(mem,y); if(svc&&svc.date===date)tags.push(`<span class="tag service">${mem.initial} - ${svc.years} Year Service</span>`)});
+  const calendarWFHList=shouldShowWFHPlanningOnCalendar()?getCalendarWFHList(date).filter(x=>canShowWFHOnCalendar(x)):[];
+  calendarWFHList.forEach(x=>{
+   if(x==='NEEDS_REASSIGN'){
+    tags.push(`<span class="tag warn wfhNeedReassign">WFH slot needs reassignment</span>`);
+    return;
+   }
+   const special=isSpecialApprovedWFH(date,x);
+   const changed=isCalendarWFHChanged(date,x);
+   tags.push(`<span class="tag ${special?'wfhspecial':changed?'wfhchange':'wfh'}">${x} - WFH${special?' (Special Approval)':changed?' (Changed)':''}</span>`);
+  });
+  
+  if(shouldShowLocalBuddyOnCalendar()){
+    const localBuddy=localBuddyAssignmentsForDate(date);
+    localBuddy.forEach(lb=>{
+      tags.push(`<span class="tag ${lb.originalCover?'coverswap':'wfhchange'}">${lb.cover} Cover ${lb.absent}${lb.mode&&lb.mode.includes('1-to-2')?' (1-to-2)':''}${lb.originalCover?' (Swapped from '+lb.originalCover+')':''}</span>`);
+    });
+  }
+
+  const remoteCovers=remoteCoverAssignmentsForDate(date).filter(remoteCalendarBuddyVisible);
+  remoteCovers.forEach(rc=>{
+    const label=rc.remote==='TSH'?`${rc.cover} Cover TSH`:`${rc.cover} Remote Cover ${rc.remote}`;
+    tags.push(`<span class="tag remotecover">${label}${rc.mode&&rc.mode.includes('1-to-2')?' (1-to-2)':''}</span>`);
+  });
+
+  (d.workTimeRequests||[]).filter(r=>r.status==='Approved'&&r.date===date&&canShowAbsenceOnCalendar(r.initial)).forEach(r=>{
+   tags.push(`<span class="tag worktime">${r.initial} - Work Time ${formatTimeForDisplay(r.start)}-${formatTimeForDisplay(r.end)}</span>`);
+  });
+
+  d.records.filter(r=>r.status==='Approved'&&r.status!=='Rejected'&&r.status!=='Cancelled'&&canShowAbsenceOnCalendar(r.initial)&&eachDate(r.from,r.to).includes(date)).forEach(r=>{
+   tags.push(`<span class="tag ${r.type==='WFH'?'wfh':r.type==='MC'?'info':r.type==='MCWFH'?'mcwfh':'leave'}">${r.initial} - ${calendarLeaveLabel(r)}</span>`);
+  });
+  if(isSpecialDay(date) && currentCalendarViewFilter()!=='Remote' && !isRemoteStaffUser())tags.push(`<span class="tag warn">Special Day</span>`);
+  html+=`<div class="day ${wd===0||wd===6?'weekend':''} ${date===iso(new Date())?'today':''}"><div class="dateNo">${day}</div>${tags.join('')}</div>`;
+ }
+ $('calendar').innerHTML=html;
+}
+
+function ageOnDate(dob, refDate){
+ if(!dob)return null;
+ const b=fmt(dob);
+ const r=refDate?fmt(refDate):new Date();
+ let age=r.getFullYear()-b.getFullYear();
+ const m=r.getMonth()-b.getMonth();
+ if(m<0 || (m===0 && r.getDate()<b.getDate())) age--;
+ return age;
+}
+function childcareEntitlement(member){
+ if(!member)return 0;
+
+ const children=(member.children||[])
+  .filter(c=>c && c.dob)
+  .map(c=>ageOnDate(c.dob, iso(new Date())))
+  .filter(age=>age!==null && age>=0);
+
+ if(children.length===0)return 0;
+
+ const youngestAge=Math.min(...children);
+
+ if(youngestAge < 7) return 6;
+
+ if(youngestAge >= 7 && youngestAge <= 12) return 2;
+
+ return 0;
+}
+
+function urgentLeaveTaken(initial){
+ const d=data();
+ return d.records
+  .filter(r=>r.initial===initial && r.status==='Approved' && ['AL','EL','AM','PM'].includes(r.type))
+  .reduce((sum,r)=>{
+   const label=calendarLeaveLabel(r);
+   if(label==='Urgent AL') return sum+(+r.units||0);
+   return sum;
+  },0);
+}
+
+function childcareUsed(initial){
+ const d=data();
+ return d.records
+  .filter(r=>r.initial===initial && r.status==='Approved' && ['CCL','CCLAM','CCLPM'].includes(r.type))
+  .reduce((s,r)=>s+(+r.units||0),0);
+}
+function childcareBalance(member){
+ return Math.max(0, childcareEntitlement(member)-childcareUsed(member.initial));
+}
+
+function used(initial,typeGroup){
+ const d=data();
+ return d.records
+  .filter(r=>r.initial===initial && r.status==='Approved' && r.status!=='Rejected' && r.status!=='Cancelled' && r.status!=='Pending')
+  .reduce((s,r)=>{
+   if(typeGroup==='AL' && ['AL','AM','PM','EL'].includes(r.type)) return s+(+r.units||0);
+   if(typeGroup==='MC' && r.type==='MC') return s+(+r.units||0);
+   if(typeGroup==='CL' && r.type==='CL') return s+(+r.units||0);
+   return s;
+  },0)
+}
+
+function defaultALBase(member){
+ if(!member)return 14;
+ return (member.location||'Local')==='Remote'?10:14;
+}
+
+function maxALCap(member){
+ if(!member)return 21;
+ return (member.location||'Local')==='Remote'?18:21;
+}
+
+function alBaseEntitlement(member){
+ if(member && member.alOverride!==undefined && member.alOverride!==null && member.alOverride!=='' && !isNaN(Number(member.alOverride))){
+  return Number(member.alOverride);
+ }
+ return defaultALBase(member);
+}
+
+function alEffectiveStartDate(member){
+ if(!member)return '';
+ return member.confirmDate || member.join || '';
+}
+
+function inclusiveMonthsForYear(startDate,endDate,year){
+ let startMonth=0,endMonth=11;
+ if(startDate){
+  const s=fmt(startDate);
+  if(s.getFullYear()>year)return 0;
+  if(s.getFullYear()===year)startMonth=s.getMonth();
+ }
+ if(endDate){
+  const e=fmt(endDate);
+  if(e.getFullYear()<year)return 0;
+  if(e.getFullYear()===year)endMonth=e.getMonth();
+ }
+ return Math.max(0,endMonth-startMonth+1);
+}
+
+function fullYearALEntitlement(member,year){
+ if(!member)return 0;
+ const startDate=alEffectiveStartDate(member);
+ if(!startDate)return Math.min(maxALCap(member),alBaseEntitlement(member));
+ const start=fmt(startDate);
+ if(year<start.getFullYear())return 0;
+ const yearlyIncrease=Math.max(0,year-start.getFullYear());
+ return Math.min(maxALCap(member),alBaseEntitlement(member)+yearlyIncrease);
+}
+
+function autoALEntitlement(member){
+ if(!member)return 0;
+ const today=new Date();
+ const year=today.getFullYear();
+ const startDate=alEffectiveStartDate(member);
+ const terminationDate=member.terminationDate||'';
+ const full=fullYearALEntitlement(member,year);
+ const months=inclusiveMonthsForYear(startDate,terminationDate,year);
+ const prorated=Math.round((full*months/12)*2)/2;
+ return Math.min(full,prorated);
+}
+
+function alEntitlement(member){
+ return autoALEntitlement(member);
+}
+
+function mcEntitlement(member){
+ if(!member)return 14;
+ return (member.location||'Local')==='Remote'?10:14;
+}
+
+function phInLieuBonus(member){
+ if(!member || member.week!=='5') return 0;
+ const today=new Date();
+ today.setHours(23,59,59,999);
+
+ return allPublicHolidays().filter(p=>{
+  const d=fmt(p[0]);
+  const day=d.getDay();
+  return d<=today && (day===0||day===6);
+ }).length;
+}
+
+function alTakenBetween(initial,startDate,endDate){
+ const d=data();
+ return d.records.filter(r=>
+  r.initial===initial &&
+  r.status==='Approved' &&
+  ['AL','AM','PM','EL'].includes(r.type)
+ ).reduce((sum,r)=>{
+  const dates=eachDate(r.from,r.to).filter(date=>date>=startDate && date<=endDate);
+  if(dates.length===0)return sum;
+  if(r.type==='AM'||r.type==='PM')return sum+0.5;
+  const member=d.members.find(m=>m.initial===initial);
+  return sum+dates.filter(date=>isWorkingDay(date,member)).length;
+ },0);
+}
+function renderLeaveReminder(member){
+ if(!$('leaveReminderBox'))return;
+ if(!member || isAdministrator()){
+  $('leaveReminderBox').classList.add('hide');
+  return;
+ }
+
+ const today=new Date();
+ const year=today.getFullYear();
+ const month=today.getMonth()+1;
+ const q=Math.ceil(month/3);
+ const quarterStartMonth=(q-1)*3+1;
+ const quarterEndMonth=q*3;
+ const startDate=`${year}-${String(quarterStartMonth).padStart(2,'0')}-01`;
+ const endObj=new Date(year,quarterEndMonth,0);
+ const endDate=iso(endObj);
+
+ const target=(alEntitlement(member)||data().settings.defaultAL||14)/4;
+ const taken=alTakenBetween(member.initial,startDate,endDate);
+ const shortfall=Math.max(0,target-taken);
+
+ $('leaveReminderBox').classList.remove('hide');
+ $('leaveReminderBox').classList.toggle('warning',shortfall>0);
+
+ if(shortfall>0){
+  $('leaveReminderBox').innerHTML=
+   `<b>Leave Reminder - Q${q}</b><br>`+
+   `Please plan to clear about <b>${target.toFixed(1).replace('.0','')}</b> day(s) this quarter. `+
+   `You have taken <b>${taken.toFixed(1).replace('.0','')}</b> day(s), remaining recommended to clear: <b>${shortfall.toFixed(1).replace('.0','')}</b> day(s).<br>`+
+   `<span class="muted">Note: Leave not taken in the current year will be forfeited and cannot be carried forward to the following year.</span>`;
+ }else{
+  $('leaveReminderBox').innerHTML=
+   `<b>Leave Reminder - Q${q}</b><br>`+
+   `You have cleared your recommended quarterly leave target of <b>${target.toFixed(1).replace('.0','')}</b> day(s).<br>`+
+   `<span class="muted">Note: Leave not taken in the current year will be forfeited and cannot be carried forward to the following year.</span>`;
+ }
+}
+
+function renderKPI(){
+ if(!currentUser)return;
+ const d=data();
+
+ if(isAdministrator()){
+  if($('leaveReminderBox')) $('leaveReminderBox').classList.add('hide');
+  const totalStaff=activeMembers(d.members).length;
+  const totalPending=d.records.filter(r=>r.status==='Pending').length;
+  const totalOnLeave=d.records.filter(r=>r.status==='Approved' && ['AL','AM','PM','EL','CL'].includes(r.type)).length;
+  const totalWFH=d.records.filter(r=>r.status==='Approved' && r.type==='WFH').length;
+
+  if($('adminSummary')){
+    const serviceList=serviceAnniversariesForMonth(viewDate.getFullYear(),viewDate.getMonth());
+
+    if($('serviceMonthLabel')){
+      if(serviceList.length){
+        $('serviceMonthLabel').innerHTML = `<b>Service Anniversary This Month</b><br>${serviceList.map(s=>`${s.initial} - ${s.years} Year Service on ${serviceDateText(s.date)}`).join('<br>')}`;
+        $('serviceMonthLabel').classList.remove('hide');
+        $('serviceMonthLabel').classList.add('serviceMonthLabel');
+      }else{
+        $('serviceMonthLabel').classList.add('hide');
+      }
+    }
+
+    const serviceHtml=serviceList.length
+      ? `<br><br><b>Service Milestone This Month</b><br>${serviceList.map(s=>`${s.name} (${s.initial}) ${s.years} year service on ${serviceDateText(s.date)}`).join('<br>')}`
+      : '';
+    $('adminSummary').innerHTML = `
+      <b>Admin Summary</b><br>
+      Total Staff: ${totalStaff} |
+      Pending: ${totalPending} |
+      On Leave: ${totalOnLeave} |
+      WFH: ${totalWFH}
+      ${serviceHtml}
+    `;
+    $('adminSummary').classList.remove('hide');
+  }
+
+  if($('kpiStaffName')) $('kpiStaffName').classList.add('hide');
+  if(document.querySelector('.kpi')) document.querySelector('.kpi').classList.add('hide');
+
+  if($('adminStaffBalances')){
+   $('adminStaffBalances').classList.remove('hide');
+   $('adminStaffBalances').innerHTML=activeMembers(d.members).map(m=>{
+    const al=(alEntitlement(m)+phInLieuBonus(m)-used(m.initial,'AL')).toFixed(1).replace('.0','');
+    const mc=(mcEntitlement(m)-used(m.initial,'MC')).toFixed(1).replace('.0','');
+    const cl=(2-used(m.initial,'CL')).toFixed(1).replace('.0','');
+    const pend=d.records.filter(r=>r.initial===m.initial&&r.status==='Pending').length;
+    const ccl=childcareBalance(m).toFixed(1).replace('.0','');
+    return `<div class="staffBalanceCard">
+      <div class="staffBalanceName">${m.name} (${m.initial})</div>
+      <div class="staffBalanceGrid">
+        <div class="staffBalanceBox"><div class="num">${al}</div><div class="lbl">AL<br>Balance</div></div>
+        <div class="staffBalanceBox"><div class="num">${mc}</div><div class="lbl">MC<br>Balance</div></div>
+        <div class="staffBalanceBox"><div class="num">${cl}</div><div class="lbl">Compassionate</div></div>
+        <div class="staffBalanceBox"><div class="num">${pend}</div><div class="lbl">Pending</div></div>
+        <div class="staffBalanceBox"><div class="num">${ccl}</div><div class="lbl">CCL<br>Bal</div></div>
+        <div class="staffBalanceBox"><div class="num">${urgentLeaveTaken(m.initial).toFixed(1).replace('.0','')}</div><div class="lbl">Urgent<br>Taken</div></div>
+      </div>
+    </div>`;
+   }).join('');
+  }
+  return;
+ }
+
+ if($('serviceMonthLabel')) $('serviceMonthLabel').classList.add('hide');
+ if($('adminSummary')) $('adminSummary').classList.add('hide');
+ if($('adminStaffBalances')) $('adminStaffBalances').classList.add('hide');
+ if($('kpiStaffName')) $('kpiStaffName').classList.remove('hide');
+ if(document.querySelector('.kpi')) document.querySelector('.kpi').classList.remove('hide');
+
+ const m=d.members.find(x=>x.initial===currentUser.initial)||d.members[0]; if(!m)return;
+ renderLeaveReminder(m);
+ if($('kpiStaffName')) $('kpiStaffName').innerHTML=`Balance shown for: <b>${m.name} (${m.initial})</b>`;
+ $('kAL').textContent=(alEntitlement(m)+phInLieuBonus(m)-used(m.initial,'AL')).toFixed(1).replace('.0','');
+ $('kMC').textContent=(mcEntitlement(m)-used(m.initial,'MC')).toFixed(1).replace('.0','');
+ $('kCL').textContent=(2-used(m.initial,'CL')).toFixed(1).replace('.0','');
+ $('kPend').textContent=d.records.filter(r=>r.initial===m.initial&&r.status==='Pending').length;
+ if($('kCCL')) $('kCCL').textContent=childcareBalance(m).toFixed(1).replace('.0','');
+ if($('kUrgent')) $('kUrgent').textContent=urgentLeaveTaken(m.initial).toFixed(1).replace('.0','');
+}
+
+function formatSummaryNo(n){
+ n=Number(n)||0;
+ return n.toFixed(1).replace('.0','');
+}
+function quarterDateRange(year,q){
+ const startMonth=(q-1)*3;
+ const start=new Date(year,startMonth,1);
+ const end=new Date(year,startMonth+3,0);
+ return {start:iso(start),end:iso(end)};
+}
+function isUrgentAnnualLeaveRecord(r){
+ if(!r)return false;
+ if(r.type==='EL')return true;
+ if(['AL','AM','PM'].includes(r.type)){
+  return String(r.notes||'').toLowerCase().includes('within 7 days');
+ }
+ return false;
+}
+function attendanceCategoryForRecord(r){
+ if(!r)return '';
+ if(isUrgentAnnualLeaveRecord(r))return 'urgentAL';
+ if(['AL','AM','PM'].includes(r.type))return 'annual';
+ if(r.type==='UPL')return 'unpaidAL';
+ if(['CCL','CCLAM','CCLPM'].includes(r.type))return 'childcare';
+ if(r.type==='MC')return 'medical';
+ if(['UMC','UMCL','UPMC','UPML','UNPAIDMC'].includes(r.type))return 'unpaidMedical';
+ if(r.type==='CL')return 'compassionate';
+ return '';
+}
+function attendanceRecordUnitsInRange(r,member,startDate,endDate){
+ const dates=eachDate(r.from,r.to).filter(date=>date>=startDate && date<=endDate && isWorkingDay(date,member));
+ if(!dates.length)return 0;
+ if(['AM','PM','CCLAM','CCLPM'].includes(r.type))return 0.5;
+ return dates.length;
+}
+function attendanceAllocatedForCategory(member,cat){
+ if(cat==='annual')return alEntitlement(member)+phInLieuBonus(member);
+ if(cat==='urgentAL')return 0;
+ if(cat==='unpaidAL')return 0;
+ if(cat==='childcare')return childcareEntitlement(member);
+ if(cat==='medical')return mcEntitlement(member);
+ if(cat==='unpaidMedical')return 0;
+ if(cat==='compassionate')return 2;
+ return 0;
+}
+function attendanceSummaryRows(year){
+ const d=data();
+ const cats=[
+  {key:'annual',label:'Annual Leave'},
+  {key:'urgentAL',label:'Urgent Annual Leave'},
+  {key:'unpaidAL',label:'Unpaid Annual Leave'},
+  {key:'childcare',label:'Childcare Leave'},
+  {key:'medical',label:'Medical Leave'},
+  {key:'unpaidMedical',label:'Unpaid Medical Leave'},
+  {key:'compassionate',label:'Compassionate Leave'}
+ ];
+ const records=(d.records||[]).filter(r=>r.status==='Approved' && r.status!=='Cancelled' && r.status!=='Rejected');
+ const rows=[];
+ d.members.forEach(m=>{
+  cats.forEach(cat=>{
+   const allocatedYear=attendanceAllocatedForCategory(m,cat.key);
+   const row={initial:m.initial,name:m.name,category:cat.label,entitlement:allocatedYear,allocated:[0,0,0,0],taken:[0,0,0,0],totalTaken:0,balance:0};
+   for(let q=1;q<=4;q++){
+    const qr=quarterDateRange(year,q);
+    row.allocated[q-1]=allocatedYear/4;
+    row.taken[q-1]=records.filter(r=>r.initial===m.initial && attendanceCategoryForRecord(r)===cat.key)
+      .reduce((sum,r)=>sum+attendanceRecordUnitsInRange(r,m,qr.start,qr.end),0);
+   }
+   row.totalTaken=row.taken.reduce((a,b)=>a+b,0);
+   row.balance=allocatedYear-row.totalTaken;
+   rows.push(row);
+  });
+ });
+ return rows;
+}
+function ensureSummaryYearOptions(){
+ if(!$('summaryYear'))return;
+ const d=data();
+ const years=new Set([viewDate.getFullYear(),new Date().getFullYear()]);
+ (d.records||[]).forEach(r=>{if(r.from)years.add(fmt(r.from).getFullYear()); if(r.to)years.add(fmt(r.to).getFullYear());});
+ (d.members||[]).forEach(m=>{if(m.join)years.add(fmt(m.join).getFullYear());});
+ const current=$('summaryYear').value || String(viewDate.getFullYear());
+ $('summaryYear').innerHTML=Array.from(years).sort((a,b)=>b-a).map(y=>`<option value="${y}">${y}</option>`).join('');
+ $('summaryYear').value=years.has(Number(current))?current:String(viewDate.getFullYear());
+}
+function renderAttendanceSummary(){
+ if(!$('attendanceSummaryTable'))return;
+ if(!currentUser || !isAdministrator()){
+  $('attendanceSummaryTable').innerHTML='<div class="muted">Only Admin can view attendance summary.</div>';
+  return;
+ }
+ ensureSummaryYearOptions();
+ const year=Number($('summaryYear')?.value)||viewDate.getFullYear();
+ const rows=attendanceSummaryRows(year);
+ let html='<table class="table"><tr><th>Staff</th><th>Category</th><th>Year Entitlement</th><th>Q1 Allocated</th><th>Q1 Taken</th><th>Q2 Allocated</th><th>Q2 Taken</th><th>Q3 Allocated</th><th>Q3 Taken</th><th>Q4 Allocated</th><th>Q4 Taken</th><th>Total Taken</th><th>Balance</th></tr>';
+ rows.forEach(r=>{
+  html+=`<tr><td><b>${r.name} (${r.initial})</b></td><td>${r.category}</td><td>${formatSummaryNo(r.entitlement)}</td><td>${formatSummaryNo(r.allocated[0])}</td><td>${formatSummaryNo(r.taken[0])}</td><td>${formatSummaryNo(r.allocated[1])}</td><td>${formatSummaryNo(r.taken[1])}</td><td>${formatSummaryNo(r.allocated[2])}</td><td>${formatSummaryNo(r.taken[2])}</td><td>${formatSummaryNo(r.allocated[3])}</td><td>${formatSummaryNo(r.taken[3])}</td><td>${formatSummaryNo(r.totalTaken)}</td><td>${formatSummaryNo(r.balance)}</td></tr>`;
+ });
+ html+='</table>';
+ $('attendanceSummaryTable').innerHTML=html;
+}
+function csvSafe(v){
+ v=String(v??'');
+ return '"'+v.replace(/"/g,'""')+'"';
+}
+function exportAttendanceSummaryCSV(){
+ if(!isAdministrator())return alert('Only Administrator can export attendance summary.');
+ const year=Number($('summaryYear')?.value)||viewDate.getFullYear();
+ const rows=attendanceSummaryRows(year);
+ const headers=['Year','Staff Initial','Staff Name','Category','Year Entitlement','Q1 Allocated','Q1 Taken','Q2 Allocated','Q2 Taken','Q3 Allocated','Q3 Taken','Q4 Allocated','Q4 Taken','Total Taken','Balance'];
+ const lines=[headers.map(csvSafe).join(',')];
+ rows.forEach(r=>{
+  lines.push([year,r.initial,r.name,r.category,formatSummaryNo(r.entitlement),formatSummaryNo(r.allocated[0]),formatSummaryNo(r.taken[0]),formatSummaryNo(r.allocated[1]),formatSummaryNo(r.taken[1]),formatSummaryNo(r.allocated[2]),formatSummaryNo(r.taken[2]),formatSummaryNo(r.allocated[3]),formatSummaryNo(r.taken[3]),formatSummaryNo(r.totalTaken),formatSummaryNo(r.balance)].map(csvSafe).join(','));
+ });
+ const blob=new Blob([lines.join('\n')],{type:'text/csv;charset=utf-8'}), a=document.createElement('a');
+ a.href=URL.createObjectURL(blob); a.download='staff-attendance-summary-'+year+'.csv'; a.click();
+}
+
+function renderMembers(){
+ const d=data(); 
+ let html='<table class="table"><tr><th>Action</th><th>Password</th><th>Status</th><th>Initial</th><th>WP/SP Expiry</th><th>Name</th><th>Type</th><th>Confirmation Date</th><th>Termination Date</th><th>Location</th><th>Buddy Type</th><th>Can View</th><th>Children</th><th>CCL Bal</th><th>Urgent Taken</th><th>Work</th><th>Packer</th><th>AL Entitlement</th><th>AL Bal</th></tr>';
+ d.members.forEach(m=>{
+ const kids=(m.children||[]).map(c=>c.name?`${c.name}${c.dob?' ('+c.dob+')':''}`:(c.dob||'')).join('<br>')||'-';
+ html+=`<tr>
+ <td>
+   <button class="secondary small" onclick="editMember('${m.initial}')">Edit</button>
+   <button class="secondary small" onclick="resetStaffPassword('${m.initial}')">Reset PW</button>
+   <button class="danger small" onclick="delMember('${m.initial}')">Delete</button>
+ </td>
+ <td><span class="statusBadge ${m.mustChangePassword?'terminated':''}">${m.mustChangePassword?'Must Change':'Set'}</span></td>
+ <td><span class="statusBadge ${(String(m.status||'Active').toLowerCase()==='terminated')?'terminated':''}">${m.status||'Active'}</span></td>
+ <td>${m.initial}</td>
+ <td>${m.wpExpiry||'-'}</td>
+ <td>${m.name}</td>
+ <td>${m.type}</td>
+ <td>${m.confirmDate||'-'}</td>
+ <td>${m.terminationDate||'-'}</td>
+ <td>${m.location||'Local'}</td>
+ <td>${m.buddyType||(m.initial==='TSH'?'Remote Lead':((m.location||'Local')==='Remote'?'Remote CSO':'Local CSO'))}</td>
+ <td>${m.calendarView||'All'}</td>
+ <td>${kids}</td>
+ <td>${childcareBalance(m).toFixed(1).replace('.0','')}</td>
+ <td>${urgentLeaveTaken(m.initial).toFixed(1).replace('.0','')}</td>
+ <td>${m.week}D</td>
+ <td>${m.packer}</td>
+ <td>${alEntitlement(m).toFixed(1).replace('.0','')}${(m.alOverride!==undefined&&m.alOverride!==null&&m.alOverride!=='')?' (Base)':' (Auto)'}</td>
+ <td>${(alEntitlement(m)+phInLieuBonus(m)-used(m.initial,'AL')).toFixed(1).replace('.0','')}</td>
+ </tr>`});
+ const finalHtml=html+'</table>';
+ if($('memberTable')) $('memberTable').innerHTML=finalHtml;
+ if($('memberTablePanel')) $('memberTablePanel').innerHTML=finalHtml;
+}
+
+function formatTimeForDisplay(t){
+ if(!t)return '';
+ const parts=t.split(':');
+ if(parts.length<2)return t;
+ let h=parseInt(parts[0],10), m=parts[1];
+ const ampm=h>=12?'PM':'AM';
+ h=h%12; if(h===0)h=12;
+ return `${h}.${m} ${ampm}`;
+}
+
+function submitWorkTimeChange(){
+ const d=data();
+ if(!d.workTimeRequests)d.workTimeRequests=[];
+ const initial=$('workTimeStaff').value;
+ const member=d.members.find(m=>m.initial===initial);
+ if(!isActiveMember(member))return alert('This staff is terminated and cannot submit work time change.');
+ const date=$('workTimeDate').value;
+ const start=$('workTimeStart').value;
+ const end=$('workTimeEnd').value;
+ const reason=$('workTimeReason').value.trim();
+ if(!initial||!date||!start||!end)return alert('Please select staff, date, start time and end time.');
+ if(!reason)return alert('Please enter reason for work time change request.');
+ if(start>=end)return alert('End time must be later than start time.');
+ d.workTimeRequests.push({id:Date.now(),initial,date,start,end,reason,status:'Pending'});
+ save(d);
+ $('workTimeDate').value='';
+ $('workTimeStart').value='';
+ $('workTimeEnd').value='';
+ $('workTimeReason').value='';
+ renderAll();
+ alert('Work time change request submitted for Administrator approval.');
+}
+
+function approveWorkTimeChange(id,status){
+ if(!isAdministrator())return alert('Only Administrator can approve or reject work time change requests.');
+ const d=data();
+ const r=(d.workTimeRequests||[]).find(x=>x.id===id);
+ if(!r)return;
+ r.status=status;
+ r.approvedOn=iso(new Date());
+ save(d);
+ renderAll();
+}
+
+function cancelWorkTimeChange(id){
+ const d=data();
+ const r=(d.workTimeRequests||[]).find(x=>x.id===id);
+ if(!r)return;
+ if(!isAdministrator() && r.initial!==currentUser?.initial)return alert('You can only cancel your own work time change request.');
+ if(r.status==='Rejected'||r.status==='Cancelled')return alert('This request has already been handled.');
+ if(!confirm('Cancel this work time change request?'))return;
+ r.status='Cancelled';
+ r.cancelledOn=iso(new Date());
+ save(d);
+ renderAll();
+}
+
+function renderWorkTimeChanges(){
+ if(!$('workTimeList'))return;
+ const d=data();
+ let list=[];
+ if(isAdministrator()){
+  list=(d.workTimeRequests||[]).slice();
+ }else if(currentUser){
+  list=(d.workTimeRequests||[]).filter(r=>r.initial===currentUser.initial);
+ }
+ list.sort((a,b)=>{
+  if(a.status==='Pending'&&b.status!=='Pending')return -1;
+  if(a.status!=='Pending'&&b.status==='Pending')return 1;
+  return (b.id||0)-(a.id||0);
+ });
+ $('workTimeList').innerHTML=list.map(r=>{
+  const staff=d.members.find(m=>m.initial===r.initial);
+  const staffName=staff?staff.name:r.initial;
+  const canApprove=isAdministrator()&&r.status==='Pending';
+  const canCancel=(isAdministrator()||r.initial===currentUser?.initial)&&r.status==='Pending';
+  return `<div class="item"><b>${staffName} (${r.initial}) - Work Time Change</b><div>${r.date}: ${formatTimeForDisplay(r.start)} to ${formatTimeForDisplay(r.end)}</div><div class="muted">${r.reason||''}</div><span class="status ${String(r.status||'').toLowerCase()}">${r.status}</span>${canApprove?`<div class="row" style="margin-top:9px"><button class="ok small" onclick="approveWorkTimeChange(${r.id},'Approved')">Approve</button><button class="danger small" onclick="approveWorkTimeChange(${r.id},'Rejected')">Reject</button></div>`:''}${canCancel?`<div class="row" style="margin-top:9px"><button class="danger small" onclick="cancelWorkTimeChange(${r.id})">Cancel</button></div>`:''}</div>`;
+ }).join('')||'<div class="muted">No work time change records yet.</div>';
+}
+
+function renderRecords(){
+ const d=data();
+ let visible=[];
+
+ if(currentUser && isAdministrator()){
+  visible=d.records.slice().sort((a,b)=>{
+   if(a.status==='Pending' && b.status!=='Pending') return -1;
+   if(a.status!=='Pending' && b.status==='Pending') return 1;
+   return (b.id||0)-(a.id||0);
+  });
+ }else if(currentUser && isRemoteStaffUser()){
+  visible=d.records.filter(r=>r.type!=='WFH' && canShowAbsenceOnCalendar(r.initial)).slice().sort((a,b)=>(b.id||0)-(a.id||0));
+ }else{
+  visible=d.records.filter(r=>r.initial===currentUser?.initial).slice().sort((a,b)=>(b.id||0)-(a.id||0));
+ }
+
+ $('recordsList').innerHTML=visible.map(r=>{
+  const staff=d.members.find(m=>m.initial===r.initial);
+  const staffName=staff?staff.name:r.initial;
+  const canCancel=canCancelRecord(r) && r.status!=='Cancelled' && r.status!=='Rejected' && (isAdministrator()||r.initial===currentUser?.initial);
+  const canReapply=['AL','AM','PM','EL','CL','WFH'].includes(r.type) && (isAdministrator()||r.initial===currentUser?.initial) && !(isRemoteStaffUser()&&r.type==='WFH');
+  const canApprove=isAdministrator() && r.status==='Pending';
+
+  return `<div class="item">
+    <b>${staffName} (${r.initial}) - ${r.type}</b>
+    <div>${r.from} to ${r.to}</div>
+    <div class="muted">${r.reason||r.notes||''}${r.consultFee?`<br>Consultation Fee: $${Number(r.consultFee).toFixed(2)}`:''}</div>
+    <span class="status ${r.status.toLowerCase()}">${r.status}</span>
+    ${canApprove?`<div class="row" style="margin-top:9px"><button class="ok small" onclick="approve(${r.id},'Approved')">Approve</button><button class="danger small" onclick="approve(${r.id},'Rejected')">Reject</button></div>`:''}
+    ${canCancel||canReapply?`<div class="row" style="margin-top:9px">${canCancel?`<button class="danger small" onclick="cancelRecord(${r.id})">Cancel</button>`:''}${canReapply?`<button class="secondary small" onclick="reapplyRecord(${r.id})">Reapply</button>`:''}</div>`:''}
+  </div>`;
+ }).join('')||'<div class="muted">No staff records yet.</div>'
+}
+
+function renderStaffMCClaimStatus(){
+ if(!$('staffMCClaimStatusList'))return;
+ if(!currentUser){
+  $('staffMCClaimStatusList').innerHTML='';
+  return;
+ }
+ const d=data();
+ let initial=currentUser.initial;
+ if(isAdministrator() && $('mcStaff') && $('mcStaff').value){
+  initial=$('mcStaff').value;
+ }
+ const claims=(d.mcClaims||[]).filter(c=>c.initial===initial).sort((a,b)=>(b.id||0)-(a.id||0));
+ $('staffMCClaimStatusList').innerHTML=claims.map(c=>{
+  const amount=Number(c.amount)||0;
+  const status=c.status||'Unpaid';
+  const paidText=status==='Paid'?(c.paidOn?`Paid on ${c.paidOn}`:'Paid'):'Pending payment';
+  return `<div class="item">
+    <b>${c.from} to ${c.to} - Consultation Fee $${amount.toFixed(2)}</b>
+    <div class="muted">${c.file||'No file'}${c.remarks?`<br>${c.remarks}`:''}</div>
+    <span class="status ${status==='Paid'?'approved':'pending'}">${status}</span>
+    <div class="smallText" style="margin-top:6px">${paidText}</div>
+  </div>`;
+ }).join('')||'<div class="muted">No MC claim payment record yet.</div>';
+}
+
+function toggleClaimOtherField(){
+ if(!$('claimOtherWrap')||!$('claimType'))return;
+ $('claimOtherWrap').classList.toggle('hide',$('claimType').value!=='Others');
+}
+function claimReceiptLink(c){
+ if(c&&c.receiptData&&c.receiptName){
+  return `<a href="${c.receiptData}" target="_blank" download="${c.receiptName}">${c.receiptName}</a>`;
+ }
+ return (c&&c.receiptName)?c.receiptName:'No receipt';
+}
+function readClaimReceiptFile(file){
+ return new Promise(resolve=>{
+  if(!file){resolve({receiptName:'',receiptData:''});return;}
+  const reader=new FileReader();
+  reader.onload=()=>resolve({receiptName:file.name,receiptData:reader.result});
+  reader.onerror=()=>resolve({receiptName:file.name,receiptData:''});
+  reader.readAsDataURL(file);
+ });
+}
+async function submitGeneralClaim(){
+ const d=data();
+ if(!d.generalClaims)d.generalClaims=[];
+ const initial=$('claimStaff')?$('claimStaff').value:'';
+ const date=$('claimDate')?$('claimDate').value:'';
+ const type=$('claimType')?$('claimType').value:'Transport';
+ const otherType=($('claimOtherType')&&$('claimOtherType').value.trim())||'';
+ const amount=Number(($('claimAmount')&&$('claimAmount').value)||0)||0;
+ const remarks=($('claimRemarks')&&$('claimRemarks').value.trim())||'';
+ if(!initial)return alert('Please select staff.');
+ const member=d.members.find(m=>m.initial===initial);
+ if(!isActiveMember(member))return alert('This staff is terminated and cannot submit claim.');
+ if(!date)return alert('Please choose claim date.');
+ if(type==='Others'&&!otherType)return alert('Please indicate the claim type for Others.');
+ if(amount<=0)return alert('Please key in a valid claim amount.');
+ if(!remarks)return alert('Remarks / claim reason is compulsory.');
+ const receiptFile=($('claimReceipt')&&$('claimReceipt').files&&$('claimReceipt').files[0])?$('claimReceipt').files[0]:null;
+ const receipt=await readClaimReceiptFile(receiptFile);
+ d.generalClaims.push({id:Date.now(),initial,date,type,otherType,amount,remarks,receiptName:receipt.receiptName,receiptData:receipt.receiptData,status:'Unpaid',submittedOn:iso(new Date())});
+ save(d);
+ if($('claimDate'))$('claimDate').value='';
+ if($('claimOtherType'))$('claimOtherType').value='';
+ if($('claimAmount'))$('claimAmount').value='';
+ if($('claimReceipt'))$('claimReceipt').value='';
+ if($('claimRemarks'))$('claimRemarks').value='';
+ renderAll();
+ alert('Claim submitted. It will appear under Claims Payment until paid.');
+}
+function renderStaffGeneralClaimStatus(){
+ if(!$('staffGeneralClaimStatusList'))return;
+ if(!currentUser){$('staffGeneralClaimStatusList').innerHTML='';return;}
+ const d=data();
+ let initial=currentUser.initial;
+ if(isAdministrator()&&$('claimStaff')&&$('claimStaff').value)initial=$('claimStaff').value;
+ const claims=(d.generalClaims||[]).filter(c=>c.initial===initial).sort((a,b)=>(b.id||0)-(a.id||0));
+ $('staffGeneralClaimStatusList').innerHTML=claims.map(c=>{
+  const label=c.type==='Others'?(c.otherType||'Others'):c.type;
+  const amount=Number(c.amount)||0;
+  const status=c.status||'Unpaid';
+  const paidText=status==='Paid'?(c.paidOn?`Paid on ${c.paidOn}`:'Paid'):'Pending payment';
+  return `<div class="item"><b>${c.date} - ${label} $${amount.toFixed(2)}</b><div class="muted">${c.remarks||''}<br>Receipt: ${claimReceiptLink(c)}</div><span class="status ${status==='Paid'?'approved':'pending'}">${status}</span><div class="smallText" style="margin-top:6px">${paidText}</div></div>`;
+ }).join('')||'<div class="muted">No claim payment record yet.</div>';
+}
+
+function claimMonthFromDate(date){
+ return (date||'').slice(0,7);
+}
+function setMCClaimMonthCurrent(){
+ const now=new Date();
+ if($('mcClaimMonth')) $('mcClaimMonth').value=`${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
+ renderMCClaims();
+}
+function servicePaymentAmount(years){
+ const table={5:500,10:1200,15:2000,20:3000,25:4200,30:5500,35:7000,40:10000};
+ return table[years]||0;
+}
+function servicePaymentKey(initial,years,year){return `${initial}-${years}-${year}`;}
+function getServicePaymentStatus(d,initial,years,year){
+ const key=servicePaymentKey(initial,years,year);
+ return (d.servicePaymentsPaid||[]).find(x=>x.key===key);
+}
+function unpaidLeaveDeductionKey(record){
+ return 'UPL|'+record.id;
+}
+function getUnpaidLeaveDeductionStatus(d,record){
+ const key=unpaidLeaveDeductionKey(record);
+ return (d.unpaidLeaveDeductions||[]).find(x=>x.key===key);
+}
+function payClaim(category,id){
+ if(!isAdministrator())return alert('Only Administrator / Accounts can process claims payment or wage deduction.');
+ const d=data();
+ if(category==='mc'){
+  const c=(d.mcClaims||[]).find(x=>x.id===id);
+  if(!c)return alert('MC claim not found.');
+  if(c.status==='Paid')return alert('This claim is already marked as paid.');
+  c.status='Paid'; c.paidOn=iso(new Date());
+ }else if(category==='general'){
+  const c=(d.generalClaims||[]).find(x=>x.id===id);
+  if(!c)return alert('Claim not found.');
+  if(c.status==='Paid')return alert('This claim is already marked as paid.');
+  c.status='Paid'; c.paidOn=iso(new Date());
+ }else if(category==='service'){
+  const parts=String(id).split('|');
+  const [initial,yearsText,yearText]=parts;
+  const years=Number(yearsText), year=Number(yearText);
+  const key=servicePaymentKey(initial,years,year);
+  if(!d.servicePaymentsPaid)d.servicePaymentsPaid=[];
+  if(d.servicePaymentsPaid.some(x=>x.key===key))return alert('This service payment is already marked as paid.');
+  d.servicePaymentsPaid.push({key,initial,years,year,amount:servicePaymentAmount(years),status:'Paid',paidOn:iso(new Date())});
+ }else if(category==='unpaidLeave'){
+  const r=(d.records||[]).find(x=>x.id===id);
+  if(!r || r.type!=='UPL')return alert('Unpaid leave record not found.');
+  if(!d.unpaidLeaveDeductions)d.unpaidLeaveDeductions=[];
+  const key=unpaidLeaveDeductionKey(r);
+  if(d.unpaidLeaveDeductions.some(x=>x.key===key))return alert('This unpaid leave has already been marked as deducted.');
+  d.unpaidLeaveDeductions.push({key,recordId:r.id,initial:r.initial,from:r.from,to:r.to,units:r.units,status:'Deducted',deductedOn:iso(new Date())});
+ }
+ save(d);
+ renderAll();
+}
+function payMCClaim(id){payClaim('mc',id);}
+function renderMCClaims(){
+ if(!$('adminMCClaimList'))return;
+ if(!currentUser || !isAdministrator()){
+  $('adminMCClaimList').innerHTML='<div class="muted">Only Admin can view Claims Payment.</div>';
+  return;
+ }
+ const d=data();
+ if($('mcClaimMonth') && !$('mcClaimMonth').value){
+  const now=new Date();
+  $('mcClaimMonth').value=`${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}`;
+ }
+ const month=$('mcClaimMonth')?$('mcClaimMonth').value:'';
+ const rows=[];
+ let totalUnpaid=0,totalPaid=0;
+
+ (d.mcClaims||[]).filter(c=>!month || claimMonthFromDate(c.from)===month).forEach(c=>{
+  const staff=d.members.find(m=>m.initial===c.initial);
+  const amount=Number(c.amount)||0;
+  const status=c.status||'Unpaid';
+  if(status==='Paid')totalPaid+=amount; else totalUnpaid+=amount;
+  rows.push({status,id:c.id,html:`<tr><td>${status==='Paid'?'<span class="muted">Paid</span>':`<button class="ok small" onclick="payClaim('mc',${c.id})">Pay</button>`}</td><td>${c.from} to ${c.to}</td><td>MC Consultation Fee</td><td>${staff?staff.name:c.initial} (${c.initial})</td><td>$${amount.toFixed(2)}</td><td>${c.file||'No file'}</td><td>${c.remarks||''}</td><td><span class="status ${status==='Paid'?'mcPaid':'mcUnpaid'}">${status}</span>${c.paidOn?`<br><span class="smallText">Paid on ${c.paidOn}</span>`:''}</td></tr>`});
+ });
+
+ (d.generalClaims||[]).filter(c=>!month || claimMonthFromDate(c.date)===month).forEach(c=>{
+  const staff=d.members.find(m=>m.initial===c.initial);
+  const label=c.type==='Others'?(c.otherType||'Others'):c.type;
+  const amount=Number(c.amount)||0;
+  const status=c.status||'Unpaid';
+  if(status==='Paid')totalPaid+=amount; else totalUnpaid+=amount;
+  rows.push({status,id:c.id,html:`<tr><td>${status==='Paid'?'<span class="muted">Paid</span>':`<button class="ok small" onclick="payClaim('general',${c.id})">Pay</button>`}</td><td>${c.date}</td><td>${label}</td><td>${staff?staff.name:c.initial} (${c.initial})</td><td>$${amount.toFixed(2)}</td><td>${claimReceiptLink(c)}</td><td>${c.remarks||''}</td><td><span class="status ${status==='Paid'?'mcPaid':'mcUnpaid'}">${status}</span>${c.paidOn?`<br><span class="smallText">Paid on ${c.paidOn}</span>`:''}</td></tr>`});
+ });
+
+ (d.records||[]).filter(r=>r.type==='UPL' && r.status==='Approved' && (!month || claimMonthFromDate(r.from)===month)).forEach(r=>{
+  const staff=d.members.find(m=>m.initial===r.initial);
+  const deducted=getUnpaidLeaveDeductionStatus(d,r);
+  const status=deducted?'Deducted':'Pending Deduction';
+  rows.push({status:deducted?'Paid':'Unpaid',id:r.id,html:`<tr><td>${deducted?'<span class="muted">Deducted</span>':`<button class="danger small" onclick="payClaim('unpaidLeave',${r.id})">Deduct</button>`}</td><td>${r.from} to ${r.to}</td><td>Unpaid Leave Wage Deduction</td><td>${staff?staff.name:r.initial} (${r.initial})</td><td>${Number(r.units||0).toFixed(1).replace('.0','')} day(s)</td><td>-</td><td>${r.reason||r.notes||''}</td><td><span class="status ${deducted?'mcPaid':'mcUnpaid'}">${status}</span>${deducted?.deductedOn?`<br><span class="smallText">Deducted on ${deducted.deductedOn}</span>`:''}</td></tr>`});
+ });
+
+ if(month){
+  const year=Number(month.slice(0,4));
+  d.members.forEach(m=>{
+   const svc=serviceAnniversary(m,year);
+   if(!svc || svc.date.slice(0,7)!==month)return;
+   const amount=servicePaymentAmount(svc.years);
+   if(!amount)return;
+   const paid=getServicePaymentStatus(d,m.initial,svc.years,year);
+   const status=paid?'Paid':'Unpaid';
+   if(status==='Paid')totalPaid+=amount; else totalUnpaid+=amount;
+   const serviceId=`${m.initial}|${svc.years}|${year}`;
+   rows.push({status,id:Date.parse(svc.date)||0,html:`<tr><td>${status==='Paid'?'<span class="muted">Paid</span>':`<button class="ok small" onclick="payClaim('service','${serviceId}')">Pay</button>`}</td><td>${svc.date}</td><td>${svc.years} Year Service Payment</td><td>${m.name} (${m.initial})</td><td>$${amount.toFixed(2)}</td><td>-</td><td>${svc.years} years service milestone</td><td><span class="status ${status==='Paid'?'mcPaid':'mcUnpaid'}">${status}</span>${paid?.paidOn?`<br><span class="smallText">Paid on ${paid.paidOn}</span>`:''}</td></tr>`});
+  });
+ }
+
+ rows.sort((a,b)=>{
+  if(a.status!=='Paid'&&b.status==='Paid')return -1;
+  if(a.status==='Paid'&&b.status!=='Paid')return 1;
+  return (b.id||0)-(a.id||0);
+ });
+ $('adminMCClaimList').innerHTML=`<div class="notice"><b>Selected month:</b> ${month||'All'}<br><b>Outstanding payment total:</b> $${totalUnpaid.toFixed(2)} &nbsp; <b>Paid total:</b> $${totalPaid.toFixed(2)}<br><span class="smallText">Unpaid Leave items are shown as wage deduction days and are processed with the Deduct button.</span></div>
+  <table class="table"><thead><tr><th>Action</th><th>Date</th><th>Claim Type</th><th>Staff</th><th>Amount / Days</th><th>File</th><th>Remarks</th><th>Status</th></tr></thead><tbody>${rows.map(r=>r.html).join('')||'<tr><td colspan="8" class="muted">No claims or wage deduction items for selected month.</td></tr>'}</tbody></table>`;
+}
+
+function renderApprovals(){
+ if(currentUser && !isAdministrator()){ if($('approvalList')) $('approvalList').innerHTML='<div class="muted">Only Admin can view approvals.</div>'; return; }
+ const d=data(), p=d.records.filter(r=>r.status==='Pending');
+ const wt=(d.workTimeRequests||[]).filter(r=>r.status==='Pending');
+ const leaveHtml=p.map(r=>`<div class="item"><b>${r.initial} - ${calendarLeaveLabel(r)}</b><div>${r.from} to ${r.to} (${r.units} day)</div><div class="muted">${r.reason||''}<br>${r.notes||''}</div><div class="row" style="margin-top:9px"><button class="ok small" onclick="approve(${r.id},'Approved')">Approve</button><button class="danger small" onclick="approve(${r.id},'Rejected')">Reject</button></div></div>`).join('');
+ const workTimeHtml=wt.map(r=>`<div class="item"><b>${r.initial} - Work Time Change</b><div>${r.date}: ${formatTimeForDisplay(r.start)} to ${formatTimeForDisplay(r.end)}</div><div class="muted">${r.reason||''}</div><div class="row" style="margin-top:9px"><button class="ok small" onclick="approveWorkTimeChange(${r.id},'Approved')">Approve</button><button class="danger small" onclick="approveWorkTimeChange(${r.id},'Rejected')">Reject</button></div></div>`).join('');
+ $('approvalList').innerHTML=(leaveHtml+workTimeHtml)||'<div class="muted">No pending approval.</div>'
+}
+
+function canCancelRecord(r){
+ if(!r || r.status==='Cancelled' || r.status==='Rejected') return false;
+
+ // Administrator can cancel approved/pending records for correction.
+ if(isAdministrator()) return true;
+
+ // Staff cannot cancel past records.
+ const today=iso(new Date());
+ return r.initial===currentUser?.initial && r.to>=today;
+}
+function reapplyRecord(id){
+ const d=data();
+ const r=d.records.find(x=>x.id===id);
+ if(!r)return;
+ if(!isAdministrator() && r.initial!==currentUser.initial){
+  alert('You can only reapply using your own leave / WFH record.');
+  return;
+ }
+ if(!['AL','AM','PM','EL','CL','WFH'].includes(r.type)){
+  alert('Only leave / WFH records can be reapplied.');
+  return;
+ }
+ showTab('apply');
+ setTimeout(()=>{
+  $('applyStaff').value=r.initial;
+  $('applyType').value=r.type;
+  $('fromDate').value=r.from;
+  $('toDate').value=r.to;
+  $('reason').value=r.reason||'';
+  $('reason').focus();
+ },50);
+}
+function cancelRecord(id){
+ const d=data();
+ const r=d.records.find(x=>x.id===id);
+ if(!r)return alert('Record not found.');
+
+ if(!canCancelRecord(r)){
+  return alert('You are not allowed to cancel this record.');
+ }
+
+ if(!confirm('Cancel this leave record?'))return;
+
+ r.status='Cancelled';
+ r.cancelledOn=iso(new Date());
+ r.notes=(r.notes?r.notes+' ':'')+'Cancelled.';
+
+ save(d);
+ renderAll();
+}
+
+function exportData(){
+ const blob=new Blob([JSON.stringify(data(),null,2)],{type:'application/json'}), a=document.createElement('a');
+ a.href=URL.createObjectURL(blob); a.download='staff-planner-backup.json'; a.click();
+}
+init();
+</script>
+</body>
+</html>
