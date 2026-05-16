@@ -193,6 +193,15 @@ body.isStaff .adminOnly{display:none!important}
 .autoEntitlementHint{font-size:12px;color:#75695c;margin:6px 0 2px;line-height:1.35}
 .statusBadge{font-size:11px;border-radius:999px;padding:3px 8px;display:inline-block;background:#e5f5ec;color:#266041}
 .statusBadge.terminated{background:#ffe0dd;color:#8a2d22}
+
+body.mobileView .grid{grid-template-columns:1fr!important;}
+body.mobileView .cal{gap:4px!important;}
+body.mobileView .day{min-height:95px!important;padding:4px!important;}
+body.mobileView .tag{font-size:10px!important;padding:3px 4px!important;}
+body.mobileView .tabs{overflow:auto!important;flex-wrap:nowrap!important;}
+body.mobileView .tab{white-space:nowrap!important;}
+body.desktopView .grid{grid-template-columns:330px 1fr!important;}
+
 </style>
 </head>
 <body>
@@ -202,6 +211,12 @@ body.isStaff .adminOnly{display:none!important}
     <span id="who" class="pill">Not logged in</span>
     <button id="logoutBtn" class="secondary small hide" onclick="logout()">Logout</button>
   </div>
+
+<div style="padding:10px 18px;display:flex;gap:8px;justify-content:flex-end;background:#f5efe6;border-bottom:1px solid #e7dfd3">
+  <button class="secondary small" onclick="setViewMode('mobile')">Mobile View</button>
+  <button class="secondary small" onclick="setViewMode('desktop')">Desktop View</button>
+</div>
+
 </header>
 
 <div id="login" class="loginBox card">
@@ -261,7 +276,7 @@ body.isStaff .adminOnly{display:none!important}
           <option value="AL">Annual Leave - Full Day</option><option value="AM">Morning Leave</option><option value="PM">Afternoon Leave</option>
           <option value="EL">Emergency Leave</option><option value="CL">Compassionate Leave</option><option value="CCL">Childcare Leave</option><option value="CCLAM">Childcare AM Leave</option><option value="CCLPM">Childcare PM Leave</option><option value="UPL">Unpaid Leave</option>
         </select>
-        <div class="row dateRow"><div><label>From</label><input id="fromDate" type="date" onchange="autoFillToDate()"></div><div><label>To</label><input id="toDate" type="date"></div></div>
+        <div class="row dateRow"><div><label>From</label><input id="fromDate" type="date" onchange="autoFillToDate()"></div><div><label>To</label><input id="toDate" type="date" onchange="autoFillToDate()"></div></div>
         <label style="margin-top:10px">Quick Duration</label>
         <div class="leaveQuickBtns">
           <button class="secondary small" type="button" onclick="setLeaveDays(1)">1 Day</button>
@@ -285,7 +300,7 @@ body.isStaff .adminOnly{display:none!important}
           </div>
           <div>
             <label>MC To</label>
-            <input id="mcToDate" type="date" onchange="updateMCPreview()">
+            <input id="mcToDate" type="date" onchange="syncMCTo();updateMCPreview()">
           </div>
         </div>
 
@@ -1425,9 +1440,34 @@ function renderWFHChanges(){
 }
 
 
+
+function validPlannerDateValue(v){
+ if(!v || !/^\d{4}-\d{2}-\d{2}$/.test(v))return false;
+ const y=Number(v.slice(0,4));
+ if(y<2020 || y>2035)return false;
+ const d=fmt(v);
+ return !isNaN(d.getTime()) && iso(d)===v;
+}
+function validateDateRangeFields(fromId,toId,label){
+ const fromEl=$(fromId), toEl=$(toId);
+ const from=fromEl?fromEl.value:'';
+ let to=toEl?toEl.value:'';
+ if(from && toEl && !to){
+  toEl.value=from;
+  to=from;
+ }
+ if(!from)return label+' From date is required.';
+ if(!validPlannerDateValue(from))return label+' From date is invalid. Please reselect the date.';
+ if(!to)return label+' To date is required.';
+ if(!validPlannerDateValue(to))return label+' To date is invalid. Please reselect the date.';
+ if(fmt(to)<fmt(from))return label+' To date cannot be earlier than From date.';
+ return '';
+}
+
 function autoFillToDate(){
  const from=$('fromDate').value;
- if(from && !$('toDate').value){
+ const to=$('toDate').value;
+ if(from && (!to || !validPlannerDateValue(to) || fmt(to)<fmt(from))){
   $('toDate').value=from;
  }
 }
@@ -1441,7 +1481,8 @@ function setLeaveDays(days){
 }
 
 function submitRequest(){
- if($('fromDate').value&&!$('toDate').value){$('toDate').value=$('fromDate').value;}
+ const leaveDateError=validateDateRangeFields('fromDate','toDate','Leave');
+ if(leaveDateError)return alert(leaveDateError);
 
  if(isAdministrator()&&!$('applyStaff').value)return alert('Please select staff.');
 
@@ -1535,8 +1576,10 @@ function submitRequest(){
 }
 
 function syncMCTo(){
- if($('mcDate') && $('mcToDate') && !$('mcToDate').value){
-  $('mcToDate').value=$('mcDate').value;
+ const from=$('mcDate')&&$('mcDate').value;
+ const to=$('mcToDate')&&$('mcToDate').value;
+ if($('mcDate') && $('mcToDate') && from && (!to || !validPlannerDateValue(to) || fmt(to)<fmt(from))){
+  $('mcToDate').value=from;
  }
 }
 function setMCDays(days){
@@ -1695,8 +1738,19 @@ function buildContiguousDateGroups(dates){
  return groups;
 }
 
+async function fileToBase64(file){
+ return new Promise((resolve,reject)=>{
+  const reader=new FileReader();
+  reader.onload=()=>resolve(reader.result);
+  reader.onerror=reject;
+  reader.readAsDataURL(file);
+ });
+}
 async function submitMC(){
  if(isAdministrator()&&!$('mcStaff').value)return alert('Please select staff.');
+
+ const mcDateError=validateDateRangeFields('mcDate','mcToDate','MC');
+ if(mcDateError)return alert(mcDateError);
 
  const d=data(), initial=$('mcStaff').value, date=$('mcDate').value, to=($('mcToDate')&&$('mcToDate').value)||date;
  if(!date)return alert('Please choose MC date.');
@@ -3002,6 +3056,9 @@ function renderCalendar(){
   d.records.filter(r=>r.status==='Approved'&&r.status!=='Rejected'&&r.status!=='Cancelled'&&canShowAbsenceOnCalendar(r.initial)&&eachDate(r.from,r.to).includes(date)).forEach(r=>{
    tags.push(`<span class="tag ${r.type==='WFH'?'wfh':r.type==='MC'?'info':r.type==='MCWFH'?'mcwfh':'leave'}">${r.initial} - ${calendarLeaveLabel(r)}</span>`);
   });
+  activeMembers(d.members).filter(mem=>canShowAbsenceOnCalendar(mem.initial) && isFallbackMCClaimDate(mem.initial,date)).forEach(mem=>{
+   tags.push(`<span class="tag info">${mem.initial} - MC</span>`);
+  });
   if(isSpecialDay(date) && currentCalendarViewFilter()!=='Remote' && !isRemoteStaffUser())tags.push(`<span class="tag warn">Special Day</span>`);
   html+=`<div class="day ${wd===0||wd===6?'weekend':''} ${date===iso(new Date())?'today':''}"><div class="dateNo">${day}</div>${tags.join('')}</div>`;
  }
@@ -3057,16 +3114,55 @@ function childcareBalance(member){
  return Math.max(0, childcareEntitlement(member)-childcareUsed(member.initial));
 }
 
+
+function mcClaimDeductibleDates(initial){
+ const d=data();
+ const member=(d.members||[]).find(m=>m.initial===initial);
+ if(!member)return [];
+ const represented=new Set();
+ (d.records||[]).filter(r=>
+  r.initial===initial &&
+  r.status==='Approved' &&
+  r.status!=='Rejected' &&
+  r.status!=='Cancelled' &&
+  ['MC','AL','UPL','MCWFH'].includes(r.type)
+ ).forEach(r=>{
+  eachDate(r.from,r.to).forEach(day=>represented.add(day));
+ });
+ const dates=new Set();
+ (d.mcClaims||[]).filter(c=>
+  c.initial===initial &&
+  c.status!=='Rejected' &&
+  c.status!=='Cancelled' &&
+  !c.leaveClaimOnly &&
+  !(Array.isArray(c.recordIds) && c.recordIds.length>0)
+ ).forEach(c=>{
+  const from=c.from||c.date||c.mcDate;
+  const to=c.to||c.toDate||c.mcToDate||from;
+  if(!from)return;
+  const wfhSet=new Set(Array.isArray(c.wfhDates)?c.wfhDates:String(c.wfhDates||'').split(',').map(x=>x.trim()).filter(Boolean));
+  eachDate(from,to).forEach(day=>{
+   if(isWorkingDay(day,member) && !wfhSet.has(day) && !represented.has(day))dates.add(day);
+  });
+ });
+ return Array.from(dates).sort();
+}
+function isFallbackMCClaimDate(initial,date){
+ return mcClaimDeductibleDates(initial).includes(date);
+}
+
 function used(initial,typeGroup){
  const d=data();
- return d.records
+ const recordUsed=d.records
   .filter(r=>r.initial===initial && r.status==='Approved' && r.status!=='Rejected' && r.status!=='Cancelled' && r.status!=='Pending')
   .reduce((s,r)=>{
    if(typeGroup==='AL' && ['AL','AM','PM','EL'].includes(r.type)) return s+(+r.units||0);
    if(typeGroup==='MC' && r.type==='MC') return s+(+r.units||0);
    if(typeGroup==='CL' && r.type==='CL') return s+(+r.units||0);
    return s;
-  },0)
+  },0);
+ if(typeGroup==='MC') return recordUsed + mcClaimDeductibleDates(initial).length;
+ return recordUsed;
 }
 
 function defaultALBase(member){
@@ -3528,8 +3624,6 @@ function renderRecords(){
    if(a.status!=='Pending' && b.status==='Pending') return 1;
    return (b.id||0)-(a.id||0);
   });
- }else if(currentUser && isRemoteStaffUser()){
-  visible=d.records.filter(r=>r.type!=='WFH' && canShowAbsenceOnCalendar(r.initial)).slice().sort((a,b)=>(b.id||0)-(a.id||0));
  }else{
   visible=d.records.filter(r=>r.initial===currentUser?.initial).slice().sort((a,b)=>(b.id||0)-(a.id||0));
  }
@@ -3568,9 +3662,10 @@ function renderStaffMCClaimStatus(){
   const amount=Number(c.amount)||0;
   const status=c.status||'Unpaid';
   const paidText=status==='Paid'?(c.paidOn?`Paid on ${c.paidOn}`:'Paid'):'Pending payment';
+  const leaveNote=c.leaveStatus?`<br><span class="smallText">${c.leaveStatus}</span>`:'';
   return `<div class="item">
     <b>${c.from} to ${c.to} - Consultation Fee $${amount.toFixed(2)}</b>
-    <div class="muted">${c.file||'No file'}${c.remarks?`<br>${c.remarks}`:''}</div>
+    <div class="muted">${c.file||'No file'}${c.remarks?`<br>${c.remarks}`:''}${leaveNote}</div>
     <span class="status ${status==='Paid'?'approved':'pending'}">${status}</span>
     <div class="smallText" style="margin-top:6px">${paidText}</div>
   </div>`;
@@ -3590,8 +3685,47 @@ function claimReceiptLink(c){
 function readClaimReceiptFile(file){
  return new Promise(resolve=>{
   if(!file){resolve({receiptName:'',receiptData:''});return;}
+
+  const finishWithOriginal=()=>{
+   const reader=new FileReader();
+   reader.onload=()=>resolve({receiptName:file.name,receiptData:reader.result});
+   reader.onerror=()=>resolve({receiptName:file.name,receiptData:''});
+   reader.readAsDataURL(file);
+  };
+
+  if(!file.type || !file.type.startsWith('image/')){
+   finishWithOriginal();
+   return;
+  }
+
   const reader=new FileReader();
-  reader.onload=()=>resolve({receiptName:file.name,receiptData:reader.result});
+  reader.onload=function(e){
+   const img=new Image();
+   img.onload=function(){
+    try{
+     const maxSide=1200;
+     let w=img.width;
+     let h=img.height;
+     const scale=Math.min(1,maxSide/Math.max(w,h));
+     w=Math.round(w*scale);
+     h=Math.round(h*scale);
+
+     const canvas=document.createElement('canvas');
+     canvas.width=w;
+     canvas.height=h;
+     const ctx=canvas.getContext('2d');
+     ctx.drawImage(img,0,0,w,h);
+
+     const compressed=canvas.toDataURL('image/jpeg',0.72);
+     const baseName=(file.name||'upload').replace(/\.[^.]+$/,'');
+     resolve({receiptName:baseName+'.jpg',receiptData:compressed});
+    }catch(err){
+     finishWithOriginal();
+    }
+   };
+   img.onerror=finishWithOriginal;
+   img.src=e.target.result;
+  };
   reader.onerror=()=>resolve({receiptName:file.name,receiptData:''});
   reader.readAsDataURL(file);
  });
@@ -3719,8 +3853,9 @@ function renderMCClaims(){
   const staff=d.members.find(m=>m.initial===c.initial);
   const amount=Number(c.amount)||0;
   const status=c.status||'Unpaid';
+  const leaveNote=c.leaveStatus?`<br><span class="smallText">${c.leaveStatus}</span>`:'';
   if(status==='Paid')totalPaid+=amount; else totalUnpaid+=amount;
-  rows.push({status,id:c.id,html:`<tr><td>${status==='Paid'?'<span class="muted">Paid</span>':`<button class="ok small" onclick="payClaim('mc',${c.id})">Pay</button>`}</td><td>${c.from} to ${c.to}</td><td>MC Consultation Fee</td><td>${staff?staff.name:c.initial} (${c.initial})</td><td>$${amount.toFixed(2)}</td><td>${c.file||'No file'}</td><td>${c.remarks||''}</td><td><span class="status ${status==='Paid'?'mcPaid':'mcUnpaid'}">${status}</span>${c.paidOn?`<br><span class="smallText">Paid on ${c.paidOn}</span>`:''}</td></tr>`});
+  rows.push({status,id:c.id,html:`<tr><td>${status==='Paid'?'<span class="muted">Paid</span>':`<button class="ok small" onclick="payClaim('mc',${c.id})">Pay</button>`}</td><td>${c.from} to ${c.to}</td><td>MC Consultation Fee${leaveNote}</td><td>${staff?staff.name:c.initial} (${c.initial})</td><td>$${amount.toFixed(2)}</td><td>${c.file||'No file'}</td><td>${c.remarks||''}</td><td><span class="status ${status==='Paid'?'mcPaid':'mcUnpaid'}">${status}</span>${c.paidOn?`<br><span class="smallText">Paid on ${c.paidOn}</span>`:''}</td></tr>`});
  });
 
  (d.generalClaims||[]).filter(c=>!month || claimMonthFromDate(c.date)===month).forEach(c=>{
@@ -3813,11 +3948,31 @@ function cancelRecord(id){
   return alert('You are not allowed to cancel this record.');
  }
 
- if(!confirm('Cancel this leave record?'))return;
+ const isMCRelated=['MC','MCWFH'].includes(r.type) || (r.notes||'').toLowerCase().includes('mc submitted') || (r.notes||'').toLowerCase().includes('exceeded mc');
+ const msg=isMCRelated
+  ? 'Cancel this MC leave record? The calendar/MC deduction will be removed, but any MC consultation fee claim and uploaded receipt will remain under Claims Payment.'
+  : 'Cancel this leave record?';
+ if(!confirm(msg))return;
 
  r.status='Cancelled';
  r.cancelledOn=iso(new Date());
  r.notes=(r.notes?r.notes+' ':'')+'Cancelled.';
+
+ if(isMCRelated){
+  (d.mcClaims||[]).forEach(c=>{
+   const linked=Array.isArray(c.recordIds) && c.recordIds.map(String).includes(String(id));
+   if(linked){
+    if(!Array.isArray(c.leaveCancelledRecordIds))c.leaveCancelledRecordIds=[];
+    if(!c.leaveCancelledRecordIds.map(String).includes(String(id)))c.leaveCancelledRecordIds.push(id);
+    const linkedRecords=(c.recordIds||[]).map(rid=>d.records.find(x=>String(x.id)===String(rid))).filter(Boolean);
+    const hasActiveLeave=linkedRecords.some(x=>x.status==='Approved' && x.status!=='Cancelled' && x.status!=='Rejected');
+    if(!hasActiveLeave){
+     c.leaveClaimOnly=true;
+     c.leaveStatus='Claim Only - MC Cancelled / Staff Worked';
+    }
+   }
+  });
+ }
 
  save(d);
  renderAll();
@@ -3828,6 +3983,21 @@ function exportData(){
  a.href=URL.createObjectURL(blob); a.download='staff-planner-backup.json'; a.click();
 }
 init();
+
+function setViewMode(mode){
+  localStorage.staffPlannerViewMode=mode;
+  document.body.classList.remove('mobileView','desktopView');
+  if(mode==='mobile'){
+    document.body.classList.add('mobileView');
+  }else{
+    document.body.classList.add('desktopView');
+  }
+}
+(function(){
+  const saved=localStorage.staffPlannerViewMode || (window.innerWidth<=900 ? 'mobile' : 'desktop');
+  setViewMode(saved);
+})();
+
 </script>
 </body>
 </html>
