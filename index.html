@@ -557,6 +557,38 @@ body.isAdmin span.adminOnly.hide{
           <div id="phList" class="phList"></div>
         </div>
 
+        
+        <div class="phEditorBox">
+          <h3>AL Manual Adjustment</h3>
+          <div class="notice">Administrator can manually add or deduct AL balance for yearly forfeiture, carry forward, special approval, or correction without changing the entitlement engine.</div>
+
+          <label>Staff</label>
+          <select id="alAdjustStaff"></select>
+
+          <div class="row">
+            <div>
+              <label>Adjustment Type</label>
+              <select id="alAdjustType">
+                <option value="add">Add AL</option>
+                <option value="deduct">Deduct AL</option>
+              </select>
+            </div>
+
+            <div>
+              <label>Days</label>
+              <input id="alAdjustDays" type="number" min="0" step="0.5" placeholder="e.g. 3">
+            </div>
+          </div>
+
+          <label>Reason</label>
+          <textarea id="alAdjustReason" placeholder="e.g. 2026 unused AL forfeiture"></textarea>
+
+          <button class="gold" style="width:100%;margin-top:12px" onclick="saveALAdjustment()">Save AL Adjustment</button>
+
+          <div id="alAdjustmentList" class="list" style="margin-top:12px"></div>
+        </div>
+
+
         <button class="secondary" style="width:100%;margin-top:8px" onclick="exportData()">Export Backup JSON</button>
       </section>
     </aside>
@@ -623,6 +655,7 @@ const defaults={
  mcClaims:[],
  generalClaims:[],
  servicePaymentsPaid:[],
+ alAdjustments:[],
  coverSwapRequests:[],
  adminCoverOverrides:[],
  adminCoverRemoteOverrides:[],
@@ -642,6 +675,7 @@ function normalizeData(d){
  if(!d.mcClaims)d.mcClaims=[];
  if(!d.generalClaims)d.generalClaims=[];
  if(!d.servicePaymentsPaid)d.servicePaymentsPaid=[];
+ if(!d.alAdjustments)d.alAdjustments=[];
  if(!d.coverSwapRequests)d.coverSwapRequests=[];
  if(!d.adminCoverOverrides)d.adminCoverOverrides=[];
  if(!d.adminCoverRemoteOverrides)d.adminCoverRemoteOverrides=[];
@@ -913,7 +947,66 @@ function updatePendingTabAlerts(){
  });
 }
 
-function renderAll(){renderSelectors();renderCalendar();renderMembers();renderRecords();renderApprovals();renderMCClaims();renderStaffMCClaimStatus();renderStaffGeneralClaimStatus();renderBlockouts();renderWFHChanges();renderWorkTimeChanges();renderCoverSwapRequests();renderBuddySystem();refreshAdminCoverChangeOptions();renderAttendanceSummary();updatePendingTabAlerts();renderKPI();loadSettings();renderPublicHolidayEditor();renderWPReminder(); const wfhChangeTab=document.querySelector('.tab[data-tab="wfhchange"]'); if(wfhChangeTab)wfhChangeTab.style.display=(currentUser&&isRemoteStaffUser())?'none':''; if(currentUser&&$('memberCard')){$('memberCard').style.display='none';$('adminTables').style.display='grid';} setTimeout(checkPlannerSoundNotifications,80);}
+
+function alAdjustmentTotal(initial){
+ const d=data();
+ return (d.alAdjustments||[])
+  .filter(a=>a.initial===initial)
+  .reduce((s,a)=>{
+    return s + (a.type==='deduct' ? -(+a.days||0) : (+a.days||0));
+  },0);
+}
+
+function saveALAdjustment(){
+ if(!isAdministrator()) return;
+
+ const d=data();
+ const initial=$('alAdjustStaff').value;
+ const type=$('alAdjustType').value;
+ const days=parseFloat($('alAdjustDays').value||0);
+ const reason=$('alAdjustReason').value.trim();
+
+ if(!initial) return alert('Please select staff.');
+ if(!days || days<=0) return alert('Please enter adjustment days.');
+
+ d.alAdjustments.push({
+   id:Date.now(),
+   initial,
+   type,
+   days,
+   reason,
+   createdAt:new Date().toISOString()
+ });
+
+ save(d);
+
+ $('alAdjustDays').value='';
+ $('alAdjustReason').value='';
+
+ renderALAdjustmentList();
+ renderKPI();
+
+ alert('AL adjustment saved.');
+}
+
+function renderALAdjustmentList(){
+ if(!$('alAdjustmentList')) return;
+
+ const d=data();
+
+ $('alAdjustmentList').innerHTML=(d.alAdjustments||[])
+  .slice()
+  .reverse()
+  .map(a=>`
+   <div class="item">
+     <b>${a.initial} - ${a.type==='deduct'?'Deduct':'Add'} ${a.days} Day(s)</b>
+     <div class="muted">${a.reason||'-'}</div>
+   </div>
+  `).join('') || '<div class="muted">No AL adjustments yet.</div>';
+}
+
+
+function renderAll(){renderSelectors();renderCalendar();renderMembers();renderRecords();renderApprovals();renderMCClaims();renderStaffMCClaimStatus();renderStaffGeneralClaimStatus();renderBlockouts();renderWFHChanges();renderWorkTimeChanges();renderCoverSwapRequests();renderBuddySystem();refreshAdminCoverChangeOptions();renderAttendanceSummary();updatePendingTabAlerts();renderKPI();loadSettings();renderPublicHolidayEditor();renderALAdjustmentList();renderWPReminder(); const wfhChangeTab=document.querySelector('.tab[data-tab="wfhchange"]'); if(wfhChangeTab)wfhChangeTab.style.display=(currentUser&&isRemoteStaffUser())?'none':''; if(currentUser&&$('memberCard')){$('memberCard').style.display='none';$('adminTables').style.display='grid';} setTimeout(checkPlannerSoundNotifications,80);}
 function renderSelectors(){
  const d=data();
 
@@ -944,6 +1037,12 @@ function renderSelectors(){
  if(adminWFH){
    adminWFH.innerHTML='';
    activeMembers(d.members).filter(isLocalWFHEligible).forEach(m=>adminWFH.add(new Option(`${m.initial} - ${m.name}`,m.initial)));
+ }
+
+ const alAdjustStaff=$('alAdjustStaff');
+ if(alAdjustStaff){
+   alAdjustStaff.innerHTML='';
+   activeMembers(d.members).forEach(m=>alAdjustStaff.add(new Option(`${m.initial} - ${m.name}`,m.initial)));
  }
 
  const cancelWFH=$('cancelWFHStaff');
@@ -3349,7 +3448,7 @@ function renderKPI(){
   if($('adminStaffBalances')){
    $('adminStaffBalances').classList.remove('hide');
    $('adminStaffBalances').innerHTML=activeMembers(d.members).map(m=>{
-    const al=(alEntitlement(m)+phInLieuBonus(m)-used(m.initial,'AL')).toFixed(1).replace('.0','');
+    const al=(alEntitlement(m)+phInLieuBonus(m)-used(m.initial,'AL')+alAdjustmentTotal(m.initial)).toFixed(1).replace('.0','');
     const mc=(mcEntitlement(m)-used(m.initial,'MC')).toFixed(1).replace('.0','');
     const cl=(2-used(m.initial,'CL')).toFixed(1).replace('.0','');
     const pend=d.records.filter(r=>r.initial===m.initial&&r.status==='Pending').length;
@@ -3379,7 +3478,7 @@ function renderKPI(){
  const m=d.members.find(x=>x.initial===currentUser.initial)||d.members[0]; if(!m)return;
  renderLeaveReminder(m);
  if($('kpiStaffName')) $('kpiStaffName').innerHTML=`Balance shown for: <b>${m.name} (${m.initial})</b>`;
- $('kAL').textContent=(alEntitlement(m)+phInLieuBonus(m)-used(m.initial,'AL')).toFixed(1).replace('.0','');
+ $('kAL').textContent=(alEntitlement(m)+phInLieuBonus(m)-used(m.initial,'AL')+alAdjustmentTotal(m.initial)).toFixed(1).replace('.0','');
  $('kMC').textContent=(mcEntitlement(m)-used(m.initial,'MC')).toFixed(1).replace('.0','');
  $('kCL').textContent=(2-used(m.initial,'CL')).toFixed(1).replace('.0','');
  $('kPend').textContent=d.records.filter(r=>r.initial===m.initial&&r.status==='Pending').length;
