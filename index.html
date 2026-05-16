@@ -261,7 +261,7 @@ body.isStaff .adminOnly{display:none!important}
           <option value="AL">Annual Leave - Full Day</option><option value="AM">Morning Leave</option><option value="PM">Afternoon Leave</option>
           <option value="EL">Emergency Leave</option><option value="CL">Compassionate Leave</option><option value="CCL">Childcare Leave</option><option value="CCLAM">Childcare AM Leave</option><option value="CCLPM">Childcare PM Leave</option><option value="UPL">Unpaid Leave</option>
         </select>
-        <div class="row dateRow"><div><label>From</label><input id="fromDate" type="date"></div><div><label>To</label><input id="toDate" type="date"></div></div>
+        <div class="row dateRow"><div><label>From</label><input id="fromDate" type="date" onchange="autoFillToDate()"></div><div><label>To</label><input id="toDate" type="date"></div></div>
         <label style="margin-top:10px">Quick Duration</label>
         <div class="leaveQuickBtns">
           <button class="secondary small" type="button" onclick="setLeaveDays(1)">1 Day</button>
@@ -737,6 +737,15 @@ async function saveCloudData(d){
  }catch(e){
   console.warn('Google Sheet save failed. Browser backup is still saved.',e);
  }
+}
+
+function refreshCloudAfterAttachmentSave(){
+ setTimeout(async function(){
+  const cloudData=await loadCloudData();
+  if(cloudData){
+   renderAll();
+  }
+ },2200);
 }
 
 // Simple browser sound notifications. Uses Web Audio so no external sound file is needed.
@@ -1415,6 +1424,14 @@ function renderWFHChanges(){
  $('wfhChangeList').innerHTML=html||'<div class="muted">No WFH change records yet.</div>';
 }
 
+
+function autoFillToDate(){
+ const from=$('fromDate').value;
+ if(from && !$('toDate').value){
+  $('toDate').value=from;
+ }
+}
+
 function setLeaveDays(days){
  const from=$('fromDate').value;
  if(!from)return alert('Please choose From date first.');
@@ -1424,6 +1441,8 @@ function setLeaveDays(days){
 }
 
 function submitRequest(){
+ if($('fromDate').value&&!$('toDate').value){$('toDate').value=$('fromDate').value;}
+
  if(isAdministrator()&&!$('applyStaff').value)return alert('Please select staff.');
 
  const d=data(), initial=$('applyStaff').value, member=d.members.find(m=>m.initial===initial), type=$('applyType').value;
@@ -1676,7 +1695,7 @@ function buildContiguousDateGroups(dates){
  return groups;
 }
 
-function submitMC(){
+async function submitMC(){
  if(isAdministrator()&&!$('mcStaff').value)return alert('Please select staff.');
 
  const d=data(), initial=$('mcStaff').value, date=$('mcDate').value, to=($('mcToDate')&&$('mcToDate').value)||date;
@@ -1696,7 +1715,8 @@ function submitMC(){
 
  const latest=data();
  const file=$('mcFile').files[0];
- const fileName=file?file.name:'No file';
+ const mcAttachment=await readClaimReceiptFile(file);
+ const fileName=mcAttachment.receiptName||'No file';
  const remarks=$('mcRemarks').value;
  const consultFee=Number(($('mcConsultFee')&&$('mcConsultFee').value)||0)||0;
  const latestMember=latest.members.find(m=>m.initial===initial)||member;
@@ -1760,12 +1780,16 @@ function submitMC(){
   amount:consultFee,
   remarks,
   file:fileName,
+  fileName:fileName,
+  fileData:mcAttachment.receiptData||'',
+  fileUrl:'',
   status:'Unpaid',
   submittedOn:iso(new Date()),
   paidOn:''
  });
 
  save(latest);
+ if(mcAttachment.receiptData)refreshCloudAfterAttachmentSave();
 
  $('mcDate').value='';
  if($('mcToDate')) $('mcToDate').value='';
@@ -3592,8 +3616,9 @@ async function submitGeneralClaim(){
  if(!remarks)return alert('Remarks / claim reason is compulsory.');
  const receiptFile=($('claimReceipt')&&$('claimReceipt').files&&$('claimReceipt').files[0])?$('claimReceipt').files[0]:null;
  const receipt=await readClaimReceiptFile(receiptFile);
- d.generalClaims.push({id:Date.now(),initial,date,type,otherType,amount,remarks,receiptName:receipt.receiptName,receiptData:receipt.receiptData,status:'Unpaid',submittedOn:iso(new Date())});
+ d.generalClaims.push({id:Date.now(),initial,date,type,otherType,amount,remarks,receiptName:receipt.receiptName,receiptData:receipt.receiptData,receiptUrl:'',status:'Unpaid',submittedOn:iso(new Date())});
  save(d);
+ if(receipt.receiptData)refreshCloudAfterAttachmentSave();
  if($('claimDate'))$('claimDate').value='';
  if($('claimOtherType'))$('claimOtherType').value='';
  if($('claimAmount'))$('claimAmount').value='';
