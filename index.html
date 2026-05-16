@@ -17,6 +17,10 @@ header h1{margin:0;font-size:21px;font-weight:650;letter-spacing:.3px}.pill{disp
 h2,h3{margin:0 0 13px} h2{font-size:20px} h3{font-size:16px;color:#4a3f33}.muted{color:var(--muted);font-size:13px;line-height:1.45}
 label{display:block;font-size:12px;color:#61574c;margin:10px 0 5px} input,select,textarea,button{font:inherit}
 input,select,textarea{width:100%;border:1px solid #ddd1c0;background:#fff;border-radius:14px;padding:10px 11px;outline:none} textarea{min-height:78px;resize:vertical}
+.dateRow{display:grid!important;grid-template-columns:minmax(0,1fr) minmax(0,1fr)!important;gap:8px!important;align-items:end}
+.dateRow>*{min-width:0!important}
+.dateRow input{min-width:0!important;width:100%!important}
+
 button{border:0;border-radius:14px;padding:10px 13px;background:#26211b;color:#fff;cursor:pointer;font-weight:650} button.secondary{background:#efe6d7;color:#2b261f;border:1px solid #dacbb7} button.gold{background:linear-gradient(135deg,#a57936,#d0ae6b)} button.danger{background:var(--danger)} button.ok{background:var(--ok)} button.small{font-size:12px;padding:7px 9px;border-radius:11px}
 .row{display:flex;gap:8px;align-items:center}.row>*{flex:1}.hide{display:none!important}.tabs{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px}.tab{padding:9px 12px;border-radius:999px;background:#eee2d2;color:#2d271f;cursor:pointer;font-weight:650;font-size:13px}.tab.active{background:#2b261f;color:#fff}
 .calendarTop{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:14px}.calendarTop .title{font-size:22px;font-weight:750}
@@ -257,7 +261,7 @@ body.isStaff .adminOnly{display:none!important}
           <option value="AL">Annual Leave - Full Day</option><option value="AM">Morning Leave</option><option value="PM">Afternoon Leave</option>
           <option value="EL">Emergency Leave</option><option value="CL">Compassionate Leave</option><option value="CCL">Childcare Leave</option><option value="CCLAM">Childcare AM Leave</option><option value="CCLPM">Childcare PM Leave</option><option value="UPL">Unpaid Leave</option>
         </select>
-        <div class="row"><div><label>From</label><input id="fromDate" type="date"></div><div><label>To</label><input id="toDate" type="date"></div></div>
+        <div class="row dateRow"><div><label>From</label><input id="fromDate" type="date"></div><div><label>To</label><input id="toDate" type="date"></div></div>
         <label style="margin-top:10px">Quick Duration</label>
         <div class="leaveQuickBtns">
           <button class="secondary small" type="button" onclick="setLeaveDays(1)">1 Day</button>
@@ -469,6 +473,7 @@ body.isStaff .adminOnly{display:none!important}
   <div class="notice adminOnly">
     <b>Admin Manual Cover Change</b><br>
     Use this when Administrator needs to directly change the assigned covering staff for manpower balancing.
+    <label>Cover Type</label><select id="adminCoverType" onchange="refreshAdminCoverChangeOptions()"><option value="local">Local Cover</option><option value="remote">Remote Cover</option></select>
     <label>Cover Date</label><input id="adminCoverDate" type="date" onchange="refreshAdminCoverChangeOptions()">
     <label>Absent Staff</label><select id="adminCoverAbsent" onchange="refreshAdminCoverChangeOptions()"></select>
     <div id="adminCoverCurrent" class="muted" style="margin-top:8px">Current cover: -</div>
@@ -597,6 +602,7 @@ const defaults={
  servicePaymentsPaid:[],
  coverSwapRequests:[],
  adminCoverOverrides:[],
+ adminCoverRemoteOverrides:[],
  publicHolidays:cloneDefaultPublicHolidays()
 };
 function normalizeData(d){
@@ -615,6 +621,7 @@ function normalizeData(d){
  if(!d.servicePaymentsPaid)d.servicePaymentsPaid=[];
  if(!d.coverSwapRequests)d.coverSwapRequests=[];
  if(!d.adminCoverOverrides)d.adminCoverOverrides=[];
+ if(!d.adminCoverRemoteOverrides)d.adminCoverRemoteOverrides=[];
  if(!d.publicHolidays)d.publicHolidays=cloneDefaultPublicHolidays();
  if(Array.isArray(d.publicHolidays)){
    const converted={};
@@ -699,6 +706,7 @@ function makeFreshOperationalData(source){
  fresh.servicePaymentsPaid=[];
  fresh.coverSwapRequests=[];
  fresh.adminCoverOverrides=[];
+ fresh.adminCoverRemoteOverrides=[];
  fresh.settings=fresh.settings||{};
  fresh.settings.wfhStartIndex=8;
  fresh.settings.wfhSequence=JSON.parse(JSON.stringify(ATTACHED_WFH_SEQUENCE));
@@ -882,6 +890,10 @@ function renderSelectors(){
    if(!s)return;
 
    s.innerHTML='';
+
+   if(isAdministrator()){
+     s.add(new Option('Please select',''));
+   }
 
    activeMembers(d.members)
     .filter(m=>isAdministrator() || m.initial===currentUser?.initial)
@@ -1082,6 +1094,8 @@ function toggleWFHRequestType(){
 }
 
 function submitWFHChange(){
+ if(isAdministrator()&&!$('wfhStaff').value)return alert('Please select staff.');
+
  const d=data();
  if(!d.wfhRequests)d.wfhRequests=[];
  const initial=$('wfhStaff').value;
@@ -1410,6 +1424,8 @@ function setLeaveDays(days){
 }
 
 function submitRequest(){
+ if(isAdministrator()&&!$('applyStaff').value)return alert('Please select staff.');
+
  const d=data(), initial=$('applyStaff').value, member=d.members.find(m=>m.initial===initial), type=$('applyType').value;
  if(!isActiveMember(member))return alert('This staff is terminated and cannot submit leave.');
  const from=$('fromDate').value, to=$('toDate').value||from; if(!from||!to)return alert('Please choose date.');
@@ -1544,6 +1560,8 @@ function renderMCWFHOptions(){
 }
 
 function updateMCPreview(){
+ if(isAdministrator()&&!$('mcStaff').value){$('mcPreview').textContent='Please select staff to preview MC deduction.';return;}
+
  if(!$('mcPreview'))return;
  renderMCWFHOptions();
  const d=data();
@@ -1659,6 +1677,8 @@ function buildContiguousDateGroups(dates){
 }
 
 function submitMC(){
+ if(isAdministrator()&&!$('mcStaff').value)return alert('Please select staff.');
+
  const d=data(), initial=$('mcStaff').value, date=$('mcDate').value, to=($('mcToDate')&&$('mcToDate').value)||date;
  if(!date)return alert('Please choose MC date.');
  const member=d.members.find(m=>m.initial===initial);
@@ -2316,6 +2336,13 @@ function addBuddyRunningCount(initial,runningCounts,stats,coverType){
  stats[initial][coverType]=(stats[initial][coverType]||0)+1;
  stats[initial].total=(stats[initial].total||0)+1;
 }
+function subtractBuddyRunningCount(initial,runningCounts,stats,coverType){
+ if(!initial)return;
+ runningCounts[initial]=Math.max(0,(runningCounts[initial]||0)-1);
+ if(!stats[initial])stats[initial]={local:0,remote:0,total:0};
+ stats[initial][coverType]=Math.max(0,(stats[initial][coverType]||0)-1);
+ stats[initial].total=Math.max(0,(stats[initial].total||0)-1);
+}
 
 function approvedCoverSwapFor(date,absent,fromCover){
  const d=buddyData();
@@ -2491,10 +2518,14 @@ function renderCoverSwapRequests(){
  }
  if(isAdministrator()){
   const adminOverrides=(d.adminCoverOverrides||[]).slice().sort((a,b)=>(b.date||'').localeCompare(a.date||''));
-  if(adminOverrides.length){
+  const adminRemoteOverrides=(d.adminCoverRemoteOverrides||[]).slice().sort((a,b)=>(b.date||'').localeCompare(a.date||''));
+  if(adminOverrides.length||adminRemoteOverrides.length){
    html+=`<div class="notice"><b>Admin Manual Cover Changes</b></div>`;
    html+=adminOverrides.map(r=>{
-    return `<div class="item"><b>${r.date} - Cover ${r.absent}</b><div>${r.fromCover} → ${r.toCover}</div><div class="muted">${r.reason||''}<br>Changed by: ${r.createdBy||'-'} ${r.createdOn||''}</div><span class="status approved">${r.status||'Active'}</span></div>`;
+    return `<div class="item"><b>${r.date} - Local Cover ${r.absent}</b><div>${r.fromCover} → ${r.toCover}</div><div class="muted">${r.reason||''}<br>Changed by: ${r.createdBy||'-'} ${r.createdOn||''}</div><span class="status approved">${r.status||'Active'}</span></div>`;
+   }).join('');
+   html+=adminRemoteOverrides.map(r=>{
+    return `<div class="item"><b>${r.date} - Remote Cover ${r.remote}</b><div>${r.fromCover} → ${r.toCover}</div><div class="muted">${r.reason||''}<br>Changed by: ${r.createdBy||'-'} ${r.createdOn||''}</div><span class="status approved">${r.status||'Active'}</span></div>`;
    }).join('');
   }
  }
@@ -2602,6 +2633,17 @@ function getBuddyTimeline(){
      });
    }
 
+   const beforeRemoteAssignments=remoteAssignments.map(a=>({...a}));
+   const adminChangedRemoteAssignments=applyAdminRemoteCoverOverrides(date,remoteAssignments);
+   adminChangedRemoteAssignments.forEach((a,i)=>{
+    const before=beforeRemoteAssignments[i];
+    if(a.adminOverride && before && before.cover!==a.cover){
+     subtractBuddyRunningCount(before.cover,runningCounts,stats,'remote');
+     addBuddyRunningCount(a.cover,runningCounts,stats,'remote');
+    }
+   });
+   remoteAssignments.splice(0,remoteAssignments.length,...adminChangedRemoteAssignments);
+
    timeline.local[date]=localAssignments;
    timeline.remote[date]=remoteAssignments;
  });
@@ -2640,8 +2682,26 @@ function changeBuddyWeek(step){
  renderBuddySystem(true);
 }
 
+
+function adminRemoteCoverOverrideFor(date,remote){
+ const d=buddyData();
+ return (d.adminCoverRemoteOverrides||[]).find(r=>
+  r.status==='Active' &&
+  r.date===date &&
+  r.remote===remote
+ );
+}
+function applyAdminRemoteCoverOverrides(date,assignments){
+ return assignments.map(a=>{
+  const override=adminRemoteCoverOverrideFor(date,a.remote);
+  if(!override)return a;
+  return {...a,originalCover:a.cover,cover:override.toCover,adminOverride:true,adminRemoteOverrideId:override.id,mode:(a.mode||'')+' Admin Changed'};
+ });
+}
+
 function refreshAdminCoverChangeOptions(){
  if(!$('adminCoverDate')||!isAdministrator())return;
+ const coverType=$('adminCoverType')?$('adminCoverType').value:'local';
  const date=$('adminCoverDate').value;
  const absentSel=$('adminCoverAbsent');
  const newSel=$('adminCoverNew');
@@ -2658,22 +2718,29 @@ function refreshAdminCoverChangeOptions(){
   return;
  }
 
- const assignments=localBuddyAssignmentsForDate(date);
+ const assignments=coverType==='remote'
+  ? remoteCoverAssignmentsForDate(date)
+  : localBuddyAssignmentsForDate(date);
+
  if(!assignments.length){
-  absentSel.add(new Option('No local covering required on this date',''));
+  absentSel.add(new Option(coverType==='remote'?'No remote covering required on this date':'No local covering required on this date',''));
   newSel.add(new Option('No available cover',''));
   return;
  }
 
  const previousAbsent=absentSel.dataset.selected || absentSel.value;
  assignments.forEach(a=>{
-  absentSel.add(new Option(`${a.absent} currently covered by ${a.cover}`,a.absent));
+  const absentKey=coverType==='remote'?a.remote:a.absent;
+  const label=coverType==='remote'
+   ? `${a.remote} currently covered by ${a.cover}`
+   : `${a.absent} currently covered by ${a.cover}`;
+  absentSel.add(new Option(label,absentKey));
  });
- if(previousAbsent && assignments.some(a=>a.absent===previousAbsent))absentSel.value=previousAbsent;
+ if(previousAbsent && assignments.some(a=>(coverType==='remote'?a.remote:a.absent)===previousAbsent))absentSel.value=previousAbsent;
 
  const selectedAbsent=absentSel.value;
  absentSel.dataset.selected=selectedAbsent;
- const current=assignments.find(a=>a.absent===selectedAbsent);
+ const current=assignments.find(a=>(coverType==='remote'?a.remote:a.absent)===selectedAbsent);
 
  if(!current){
   newSel.add(new Option('No available cover',''));
@@ -2698,6 +2765,7 @@ function refreshAdminCoverChangeOptions(){
 
 function adminManualCoverChange(){
  if(!isAdministrator())return alert('Only Administrator can change cover staff.');
+ const coverType=$('adminCoverType')?$('adminCoverType').value:'local';
  const date=$('adminCoverDate').value;
  const absent=$('adminCoverAbsent').value;
  const toCover=$('adminCoverNew').value;
@@ -2705,26 +2773,45 @@ function adminManualCoverChange(){
 
  if(!date||!absent||!toCover)return alert('Please select date, absent staff and new cover staff.');
 
- const current=localBuddyAssignmentsForDate(date).find(a=>a.absent===absent);
+ const current=(coverType==='remote'
+  ? remoteCoverAssignmentsForDate(date).find(a=>a.remote===absent)
+  : localBuddyAssignmentsForDate(date).find(a=>a.absent===absent));
+
  if(!current)return alert('No current covering assignment found for this date/staff.');
 
  if(isAbsentForBuddy(toCover,date))return alert('Selected cover staff is not available on this date.');
 
  const d=data();
- if(!d.adminCoverOverrides)d.adminCoverOverrides=[];
 
- d.adminCoverOverrides=d.adminCoverOverrides.filter(r=>!(r.status==='Active'&&r.date===date&&r.absent===absent));
- d.adminCoverOverrides.push({
-  id:Date.now(),
-  date,
-  absent,
-  fromCover:current.cover,
-  toCover,
-  reason:reason||'Admin manual cover change',
-  status:'Active',
-  createdBy:currentUser.initial,
-  createdOn:iso(new Date())
- });
+ if(coverType==='remote'){
+  if(!d.adminCoverRemoteOverrides)d.adminCoverRemoteOverrides=[];
+  d.adminCoverRemoteOverrides=d.adminCoverRemoteOverrides.filter(r=>!(r.status==='Active'&&r.date===date&&r.remote===absent));
+  d.adminCoverRemoteOverrides.push({
+   id:Date.now(),
+   date,
+   remote:absent,
+   fromCover:current.cover,
+   toCover,
+   reason:reason||'Admin manual remote cover change',
+   status:'Active',
+   createdBy:currentUser.initial,
+   createdOn:iso(new Date())
+  });
+ }else{
+  if(!d.adminCoverOverrides)d.adminCoverOverrides=[];
+  d.adminCoverOverrides=d.adminCoverOverrides.filter(r=>!(r.status==='Active'&&r.date===date&&r.absent===absent));
+  d.adminCoverOverrides.push({
+   id:Date.now(),
+   date,
+   absent,
+   fromCover:current.cover,
+   toCover,
+   reason:reason||'Admin manual cover change',
+   status:'Active',
+   createdBy:currentUser.initial,
+   createdOn:iso(new Date())
+  });
+ }
 
  save(d);
  $('adminCoverReason').value='';
@@ -2818,7 +2905,7 @@ function renderBuddySystem(force=false){
       htmlOut+=`
         <div style="margin-bottom:6px">
           <span class="tag remotecover">${label}${a.mode&&a.mode.includes('1-to-2')?' (1-to-2)':''}</span>
-          <div class="muted">Buddy Type: ${a.mode||'Remote Coverage'}</div>
+          <div class="muted">Buddy Type: ${a.mode||'Remote Coverage'}${a.adminOverride?' · Admin Manual Remote Cover Change':''}</div>
         </div>
       `;
    });
@@ -2881,7 +2968,7 @@ function renderCalendar(){
   const remoteCovers=remoteCoverAssignmentsForDate(date).filter(remoteCalendarBuddyVisible);
   remoteCovers.forEach(rc=>{
     const label=rc.remote==='TSH'?`${rc.cover} Cover TSH`:`${rc.cover} Remote Cover ${rc.remote}`;
-    tags.push(`<span class="tag remotecover">${label}${rc.mode&&rc.mode.includes('1-to-2')?' (1-to-2)':''}</span>`);
+    tags.push(`<span class="tag remotecover">${label}${rc.mode&&rc.mode.includes('1-to-2')?' (1-to-2)':''}${rc.originalCover?' (Changed from '+rc.originalCover+')':''}</span>`);
   });
 
   (d.workTimeRequests||[]).filter(r=>r.status==='Approved'&&r.date===date&&canShowAbsenceOnCalendar(r.initial)).forEach(r=>{
@@ -3336,6 +3423,8 @@ function formatTimeForDisplay(t){
 }
 
 function submitWorkTimeChange(){
+ if(isAdministrator()&&!$('workTimeStaff').value)return alert('Please select staff.');
+
  const d=data();
  if(!d.workTimeRequests)d.workTimeRequests=[];
  const initial=$('workTimeStaff').value;
@@ -3484,6 +3573,8 @@ function readClaimReceiptFile(file){
  });
 }
 async function submitGeneralClaim(){
+ if(isAdministrator()&&!$('claimStaff').value)return alert('Please select staff.');
+
  const d=data();
  if(!d.generalClaims)d.generalClaims=[];
  const initial=$('claimStaff')?$('claimStaff').value:'';
