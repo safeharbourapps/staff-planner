@@ -202,6 +202,14 @@ body.mobileView .tabs{overflow:auto!important;flex-wrap:nowrap!important;}
 body.mobileView .tab{white-space:nowrap!important;}
 body.desktopView .grid{grid-template-columns:330px 1fr!important;}
 
+
+/* Fix: hidden admin panels must stay hidden when switching tabs */
+body.isAdmin section.adminOnly.hide,
+body.isAdmin div.adminOnly.hide,
+body.isAdmin span.adminOnly.hide{
+  display:none!important;
+}
+
 </style>
 </head>
 <body>
@@ -3677,10 +3685,21 @@ function toggleClaimOtherField(){
  $('claimOtherWrap').classList.toggle('hide',$('claimType').value!=='Others');
 }
 function claimReceiptLink(c){
- if(c&&c.receiptData&&c.receiptName){
-  return `<a href="${c.receiptData}" target="_blank" download="${c.receiptName}">${c.receiptName}</a>`;
+ const name=(c&&c.receiptName)||(c&&c.fileName)||(c&&c.file)||'View Receipt';
+ const url=(c&&c.receiptUrl)||(c&&c.fileUrl)||(c&&c.receiptData);
+ if(url){
+  return `<a href="${url}" target="_blank" rel="noopener">${name}</a>`;
  }
  return (c&&c.receiptName)?c.receiptName:'No receipt';
+}
+
+function mcFileLink(c){
+ const name=(c&&c.file)||(c&&c.fileName)||'View MC';
+ const url=(c&&c.fileUrl)||(c&&c.receiptUrl)||(c&&c.fileData);
+ if(url){
+  return `<a href="${url}" target="_blank" rel="noopener">${name}</a>`;
+ }
+ return (c&&c.file)?c.file:'No file';
 }
 function readClaimReceiptFile(file){
  return new Promise(resolve=>{
@@ -3773,7 +3792,7 @@ function renderStaffGeneralClaimStatus(){
   const amount=Number(c.amount)||0;
   const status=c.status||'Unpaid';
   const paidText=status==='Paid'?(c.paidOn?`Paid on ${c.paidOn}`:'Paid'):'Pending payment';
-  return `<div class="item"><b>${c.date} - ${label} $${amount.toFixed(2)}</b><div class="muted">${c.remarks||''}<br>Receipt: ${claimReceiptLink(c)}</div><span class="status ${status==='Paid'?'approved':'pending'}">${status}</span><div class="smallText" style="margin-top:6px">${paidText}</div></div>`;
+  return `<div class="item"><b>${c.date} - ${label} $${amount.toFixed(2)}</b><div class="muted">${c.remarks||''}<br>Receipt: ${c.receiptName||c.fileName||'No receipt'}</div><span class="status ${status==='Paid'?'approved':'pending'}">${status}</span><div class="smallText" style="margin-top:6px">${paidText}</div></div>`;
  }).join('')||'<div class="muted">No claim payment record yet.</div>';
 }
 
@@ -3855,7 +3874,7 @@ function renderMCClaims(){
   const status=c.status||'Unpaid';
   const leaveNote=c.leaveStatus?`<br><span class="smallText">${c.leaveStatus}</span>`:'';
   if(status==='Paid')totalPaid+=amount; else totalUnpaid+=amount;
-  rows.push({status,id:c.id,html:`<tr><td>${status==='Paid'?'<span class="muted">Paid</span>':`<button class="ok small" onclick="payClaim('mc',${c.id})">Pay</button>`}</td><td>${c.from} to ${c.to}</td><td>MC Consultation Fee${leaveNote}</td><td>${staff?staff.name:c.initial} (${c.initial})</td><td>$${amount.toFixed(2)}</td><td>${c.file||'No file'}</td><td>${c.remarks||''}</td><td><span class="status ${status==='Paid'?'mcPaid':'mcUnpaid'}">${status}</span>${c.paidOn?`<br><span class="smallText">Paid on ${c.paidOn}</span>`:''}</td></tr>`});
+  rows.push({status,id:c.id,html:`<tr><td>${status==='Paid'?'<span class="muted">Paid</span>':`<button class="ok small" onclick="payClaim('mc',${c.id})">Pay</button>`}</td><td>${c.from} to ${c.to}</td><td>MC Consultation Fee${leaveNote}</td><td>${staff?staff.name:c.initial} (${c.initial})</td><td>$${amount.toFixed(2)}</td><td>${mcFileLink(c)}</td><td>${c.remarks||''}</td><td><span class="status ${status==='Paid'?'mcPaid':'mcUnpaid'}">${status}</span>${c.paidOn?`<br><span class="smallText">Paid on ${c.paidOn}</span>`:''}</td></tr>`});
  });
 
  (d.generalClaims||[]).filter(c=>!month || claimMonthFromDate(c.date)===month).forEach(c=>{
