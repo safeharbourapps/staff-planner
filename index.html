@@ -1238,12 +1238,12 @@ function submitWFHChange(){
  if(!initial||!newDate)return alert('Please select staff and requested WFH date.');
 
  const staff=d.members.find(m=>m.initial===initial);
- if(!isLocalWFHEligible(staff)){
-  return alert('WFH request is only for active Local CSO/Admin. Administrator, Remote and Terminated staff are excluded.');
+ if(requestType!=='special' && !isLocalWFHEligible(staff)){
+  return alert('WFH swap request is only for active Local CSO/Admin. Administrator, Remote and Terminated staff are excluded.');
  }
  if(requestType==='special'){
-  if(!staff || staff.type!=='CSO'){
-   return alert('Only CSO can request special approval WFH without swap.');
+  if(!staff){
+   return alert('Staff record not found.');
   }
   d.wfhRequests.push({id:Date.now(),initial,requestType:'special',originalDate:'',newDate,reason,status:'Pending'});
   save(d);
@@ -1326,8 +1326,8 @@ function approveWFHChange(id,status){
 
  if(status==='Approved' && r.requestType==='special'){
   const staff=d.members.find(m=>m.initial===r.initial);
-  if(!staff || staff.type!=='CSO'){
-   alert('Approval failed: Special WFH without swap is only for CSO.');
+  if(!staff){
+   alert('Approval failed: staff record not found.');
    return;
   }
   r.status=status;
@@ -1512,6 +1512,24 @@ function renderWFHChanges(){
  });
  const overrides=isAdministrator()?(d.wfhOverrides||[]).slice().sort((a,b)=>b.date.localeCompare(a.date)):[];
  let html='';
+ const pendingReqs=reqs.filter(r=>r.status==='Pending'||r.status==='Pending Staff Approval');
+ const otherReqs=reqs.filter(r=>!(r.status==='Pending'||r.status==='Pending Staff Approval'));
+
+ function wfhRequestCard(r){
+   const staff=d.members.find(m=>m.initial===r.initial);
+   const staffName=staff?staff.name:r.initial;
+   const canApprove=isAdministrator()&&r.status==='Pending';
+   const canApproveInternal=currentUser && r.requestType==='internalSwap' && r.status==='Pending Staff Approval' && r.swapWith===currentUser.initial;
+   const canCancelWFH=isAdministrator()&&r.status==='Approved';
+   const requestTitle=r.requestType==='special'?'Special WFH Request':(r.requestType==='internalSwap'?'Internal WFH Swap':'WFH Change');
+   const statusClass=(r.status||'').toLowerCase().replace(/\s+/g,'');
+   return `<div class="item"><b>${staffName} (${r.initial}) - ${requestTitle}</b><div>${r.requestType==='special'?r.newDate:(r.originalDate+' → '+r.newDate)}</div><div class="muted">${r.swapWith?`Swap with: ${r.swapWith}<br>`:''}${r.reason||''}</div><span class="status ${statusClass}">${r.status}</span>${canApprove?`<div class="row" style="margin-top:9px"><button class="ok small" onclick="approveWFHChange(${r.id},'Approved')">Approve</button><button class="danger small" onclick="approveWFHChange(${r.id},'Rejected')">Reject</button></div>`:''}${canApproveInternal?`<div class="row" style="margin-top:9px"><button class="ok small" onclick="approveInternalWFHChange(${r.id},'Approved')">Approve Swap</button><button class="danger small" onclick="approveInternalWFHChange(${r.id},'Rejected')">Reject Swap</button></div>`:''}${canCancelWFH?`<div class="row" style="margin-top:9px"><button class="danger small" onclick="cancelWFHChange(${r.id})">Cancel WFH</button></div>`:''}</div>`;
+ }
+
+ if(pendingReqs.length){
+  html+=pendingReqs.map(wfhRequestCard).join('');
+ }
+
  if(cancelled.length){
   html+=`<div class="notice"><b>Cancelled WFH / Outstanding Make-up</b><br>Use this section to track cancelled WFH and replan a replacement WFH date for fairness.</div>`;
   html+=cancelled.map(c=>{
@@ -1523,16 +1541,9 @@ function renderWFHChanges(){
    return `<div class="item"><b>${staffName} (${c.initial}) - Cancelled WFH</b><div>Cancelled date: ${c.date}</div><div class="muted">${c.reason||''}${c.replannedDate?`<br>Replacement WFH: ${c.replannedDate}`:''}</div><span class="status ${statusClass}">${statusText}</span>${isAdministrator()&&outstanding?`<div class="row" style="margin-top:9px"><div><label>Replacement WFH Date</label><input id="makeupWFHDate_${c.id}" type="date"></div><button class="ok small" style="align-self:flex-end" onclick="planMakeupWFHCancel('${c.id}')">Plan Replacement</button></div>`:''}</div>`;
   }).join('');
  }
- if(reqs.length){
-  html+=reqs.map(r=>{
-   const staff=d.members.find(m=>m.initial===r.initial);
-   const staffName=staff?staff.name:r.initial;
-   const canApprove=isAdministrator()&&r.status==='Pending';
-   const canApproveInternal=currentUser && r.requestType==='internalSwap' && r.status==='Pending Staff Approval' && r.swapWith===currentUser.initial;
-   const canCancelWFH=isAdministrator()&&r.status==='Approved';
-   const requestTitle=r.requestType==='special'?'Special WFH Request':(r.requestType==='internalSwap'?'Internal WFH Swap':'WFH Change');
-   const statusClass=(r.status||'').toLowerCase().replace(/\s+/g,'');
-   return `<div class="item"><b>${staffName} (${r.initial}) - ${requestTitle}</b><div>${r.requestType==='special'?r.newDate:(r.originalDate+' → '+r.newDate)}</div><div class="muted">${r.swapWith?`Swap with: ${r.swapWith}<br>`:''}${r.reason||''}</div><span class="status ${statusClass}">${r.status}</span>${canApprove?`<div class="row" style="margin-top:9px"><button class="ok small" onclick="approveWFHChange(${r.id},'Approved')">Approve</button><button class="danger small" onclick="approveWFHChange(${r.id},'Rejected')">Reject</button></div>`:''}${canApproveInternal?`<div class="row" style="margin-top:9px"><button class="ok small" onclick="approveInternalWFHChange(${r.id},'Approved')">Approve Swap</button><button class="danger small" onclick="approveInternalWFHChange(${r.id},'Rejected')">Reject Swap</button></div>`:''}${canCancelWFH?`<div class="row" style="margin-top:9px"><button class="danger small" onclick="cancelWFHChange(${r.id})">Cancel WFH</button></div>`:''}</div>`;
+ if(otherReqs.length){
+  html+=otherReqs.map(r=>{
+   return wfhRequestCard(r);
   }).join('');
  }
  if(overrides.length){
