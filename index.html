@@ -724,14 +724,26 @@ const FRESH_START_MARKER='SH_STAFF_PLANNER_CLEAN_START_2026_05_08';
 const ATTACHED_WFH_SEQUENCE=[['TPH','TKT'],['CI','TLH'],['ZWW','TLK'],['TSH','WPY'],['YLC','TLJ'],['CI','TLH'],['ZWW','TLK'],['TSH','WPY'],['YLC','TLJ'],['TPH','TKT'],['ZWW','TLK'],['TSH','WPY'],['YLC','TLJ'],['TPH','TKT'],['CI','TLH'],['TSH','WPY'],['YLC','TLJ'],['TPH','TKT'],['CI','TLH'],['ZWW','TLK'],['YLC','TLJ'],['TPH','TKT'],['CI','TLH'],['ZWW','TLK'],['TSH','WPY']];
 let cloudSaveReady=false;
 let cloudSaveTimer=null;
+let staffPlannerDataCache=null;
+let staffPlannerDataCacheRaw='';
 
 function data(){
+ const raw=localStorage.staffPlannerStaffMasterV2 || JSON.stringify(defaults);
+
+ if(staffPlannerDataCache && staffPlannerDataCacheRaw===raw){
+  return staffPlannerDataCache;
+ }
+
  try{
-  return normalizeData(JSON.parse(localStorage.staffPlannerStaffMasterV2 || JSON.stringify(defaults)));
+  staffPlannerDataCache=normalizeData(JSON.parse(raw));
+  staffPlannerDataCacheRaw=raw;
+  return staffPlannerDataCache;
  }catch(e){
   console.warn('Local data was damaged. Loading default planner data.',e);
-  localStorage.staffPlannerStaffMasterV2=JSON.stringify(normalizeData(defaults));
-  return normalizeData(JSON.parse(localStorage.staffPlannerStaffMasterV2));
+  staffPlannerDataCache=normalizeData(JSON.parse(JSON.stringify(defaults)));
+  staffPlannerDataCacheRaw=JSON.stringify(staffPlannerDataCache);
+  localStorage.staffPlannerStaffMasterV2=staffPlannerDataCacheRaw;
+  return staffPlannerDataCache;
  }
 }
 
@@ -742,7 +754,10 @@ async function loadCloudData(){
   const txt=(await res.text()).trim();
   if(!txt)return null;
   const cloudData=normalizeData(JSON.parse(txt));
-  localStorage.staffPlannerStaffMasterV2=JSON.stringify(cloudData);
+  const cloudRaw=JSON.stringify(cloudData);
+  localStorage.staffPlannerStaffMasterV2=cloudRaw;
+  staffPlannerDataCache=cloudData;
+  staffPlannerDataCacheRaw=cloudRaw;
   return cloudData;
  }catch(e){
   console.warn('Google Sheet load failed. Using browser backup data.',e);
@@ -773,7 +788,10 @@ function makeFreshOperationalData(source){
 
 function save(d){
  const normalized=normalizeData(d);
- localStorage.staffPlannerStaffMasterV2=JSON.stringify(normalized);
+ const raw=JSON.stringify(normalized);
+ localStorage.staffPlannerStaffMasterV2=raw;
+ staffPlannerDataCache=normalized;
+ staffPlannerDataCacheRaw=raw;
  queueCloudSave(normalized);
 }
 
@@ -1056,6 +1074,38 @@ function allPublicHolidays(){const d=data(); return Object.values(d.publicHolida
 function isPH(date){return publicHolidayList(date.slice(0,4)).find(p=>p[0]===date)}
 function isWorkingDay(date, member){let day=fmt(date).getDay(); if(isPH(date))return false; if(day===0)return false; if(day===6 && member?.week==='5')return false; return true}
 function eachDate(a,b){let out=[],d=fmt(a),end=fmt(b); while(d<=end){out.push(iso(d)); d.setDate(d.getDate()+1)} return out}
+
+function isValidPlannerDate(value){
+ if(!/^\d{4}-\d{2}-\d{2}$/.test(String(value||'')))return false;
+ const year=+String(value).slice(0,4);
+ if(year<2025 || year>2035)return false;
+ const d=fmt(value);
+ return !isNaN(d.getTime()) && iso(d)===value;
+}
+
+function safeEachDate(a,b){
+ if(!isValidPlannerDate(a) || !isValidPlannerDate(b))return [];
+ const start=fmt(a), end=fmt(b);
+ if(start>end)return [];
+ const maxDays=370;
+ let out=[], cur=new Date(start);
+ while(cur<=end && out.length<=maxDays){
+  out.push(iso(cur));
+  cur.setDate(cur.getDate()+1);
+ }
+ return out;
+}
+
+function activePlannerRecords(records){
+ return (records||[]).filter(r=>
+  r &&
+  r.status!=='Cancelled' &&
+  r.status!=='Rejected' &&
+  isValidPlannerDate(r.from) &&
+  isValidPlannerDate(r.to) &&
+  fmt(r.from)<=fmt(r.to)
+ );
+}
 function workingDays(a,b,member){return eachDate(a,b).filter(x=>isWorkingDay(x,member)).length}
 function leaveUnits(type,a,b,member){
  if(type==='AM'||type==='PM'||type==='CCLAM'||type==='CCLPM') return 0.5;
@@ -1095,7 +1145,8 @@ function isSpecialDay(date){
  return day===15||day===25||day===m;
 }
 function hasApprovedAbsence(initial,date){
- return data().records.some(r=>r.initial===initial && r.status==='Approved' && eachDate(r.from,r.to).includes(date) && r.type!=='WFH');
+ const d=data();
+ return activePlannerRecords(d.records).some(r=>r.initial===initial && r.status==='Approved' && safeEachDate(r.from,r.to).includes(date) && r.type!=='WFH');
 }
 function wfhForDate(date){
  const d=data(), seq=d.settings.wfhSequence, work=fmt(date).getDay();
@@ -1131,7 +1182,7 @@ function wfhForDate(date){
 }
 function packerConflict(initial,date){
  const d=data(), m=d.members.find(x=>x.initial===initial); if(!m||m.packer==='No')return false;
- const absentPackers=d.records.filter(r=>r.status==='Approved' && eachDate(r.from,r.to).includes(date)).map(r=>r.initial);
+ const absentPackers=activePlannerRecords(d.records).filter(r=>r.status==='Approved' && safeEachDate(r.from,r.to).includes(date)).map(r=>r.initial);
  const packers=d.members.filter(x=>x.packer==='Main'||x.packer==='Backup');
  const onDuty=packers.filter(x=>!absentPackers.includes(x.initial) && x.initial!==initial).length;
  return onDuty<2;
@@ -3171,7 +3222,7 @@ function renderCalendar(){
    tags.push(`<span class="tag worktime">${r.initial} - Work Time ${formatTimeForDisplay(r.start)}-${formatTimeForDisplay(r.end)}</span>`);
   });
 
-  d.records.filter(r=>r.status==='Approved'&&r.status!=='Rejected'&&r.status!=='Cancelled'&&canShowAbsenceOnCalendar(r.initial)&&eachDate(r.from,r.to).includes(date)).forEach(r=>{
+  activePlannerRecords(d.records).filter(r=>r.status==='Approved'&&canShowAbsenceOnCalendar(r.initial)&&safeEachDate(r.from,r.to).includes(date)).forEach(r=>{
    tags.push(`<span class="tag ${r.type==='WFH'?'wfh':r.type==='MC'?'info':r.type==='MCWFH'?'mcwfh':'leave'}">${r.initial} - ${calendarLeaveLabel(r)}</span>`);
   });
   activeMembers(d.members).filter(mem=>canShowAbsenceOnCalendar(mem.initial) && isFallbackMCClaimDate(mem.initial,date)).forEach(mem=>{
@@ -3245,7 +3296,7 @@ function mcClaimDeductibleDates(initial){
   r.status!=='Cancelled' &&
   ['MC','AL','UPL','MCWFH'].includes(r.type)
  ).forEach(r=>{
-  eachDate(r.from,r.to).forEach(day=>represented.add(day));
+  safeEachDate(r.from,r.to).forEach(day=>represented.add(day));
  });
  const dates=new Set();
  (d.mcClaims||[]).filter(c=>
@@ -3259,7 +3310,7 @@ function mcClaimDeductibleDates(initial){
   const to=c.to||c.toDate||c.mcToDate||from;
   if(!from)return;
   const wfhSet=new Set(Array.isArray(c.wfhDates)?c.wfhDates:String(c.wfhDates||'').split(',').map(x=>x.trim()).filter(Boolean));
-  eachDate(from,to).forEach(day=>{
+  safeEachDate(from,to).forEach(day=>{
    if(isWorkingDay(day,member) && !wfhSet.has(day) && !represented.has(day))dates.add(day);
   });
  });
@@ -3272,7 +3323,7 @@ function isFallbackMCClaimDate(initial,date){
 function used(initial,typeGroup){
  const d=data();
  const recordUsed=d.records
-  .filter(r=>r.initial===initial && r.status==='Approved' && r.status!=='Rejected' && r.status!=='Cancelled' && r.status!=='Pending')
+  .filter(r=>r.initial===initial && r.status==='Approved' && r.status!=='Pending' && isValidPlannerDate(r.from) && isValidPlannerDate(r.to))
   .reduce((s,r)=>{
    if(typeGroup==='AL' && ['AL','AM','PM','EL'].includes(r.type)) return s+(+r.units||0);
    if(typeGroup==='MC' && r.type==='MC') return s+(+r.units||0);
