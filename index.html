@@ -801,18 +801,76 @@ function queueCloudSave(d){
  cloudSaveTimer=setTimeout(()=>saveCloudData(d),350);
 }
 
+function latestIdFromArray_(arr){
+ if(!Array.isArray(arr)||!arr.length)return '';
+ return arr.reduce((max,item)=>Math.max(max,Number(item&&item.id)||0),0);
+}
+
+function saveSignature_(d){
+ d=d||{};
+ return {
+  records:latestIdFromArray_(d.records),
+  wfhOverrides:latestIdFromArray_(d.wfhOverrides),
+  wfhRemoved:latestIdFromArray_(d.wfhRemoved),
+  wfhRequests:latestIdFromArray_(d.wfhRequests),
+  workTimeRequests:latestIdFromArray_(d.workTimeRequests),
+  mcClaims:latestIdFromArray_(d.mcClaims),
+  generalClaims:latestIdFromArray_(d.generalClaims),
+  coverSwapRequests:latestIdFromArray_(d.coverSwapRequests),
+  alAdjustments:latestIdFromArray_(d.alAdjustments)
+ };
+}
+
+function signatureCovered_(expected,actual){
+ expected=expected||{}; actual=actual||{};
+ return Object.keys(expected).every(k=>(Number(actual[k])||0)>=(Number(expected[k])||0));
+}
+
+async function fetchCloudDataForVerify_(){
+ if(!GOOGLE_SHEET_WEB_APP_URL)return null;
+ const res=await fetch(GOOGLE_SHEET_WEB_APP_URL+'?action=load&verify='+Date.now(),{method:'GET',cache:'no-store'});
+ const txt=(await res.text()).trim();
+ if(!txt)return null;
+ return normalizeData(JSON.parse(txt));
+}
+
+async function verifyCloudSave_(expectedSignature){
+ try{
+  const cloudData=await fetchCloudDataForVerify_();
+  if(!cloudData){
+   console.warn('Google Sheet save verification could not read cloud data.');
+   return;
+  }
+
+  const cloudSignature=saveSignature_(cloudData);
+  if(signatureCovered_(expectedSignature,cloudSignature)){
+   console.log('Google Sheet save verified.');
+  }else{
+   console.warn('Google Sheet save sent, but latest cloud data does not yet show the update.',{expectedSignature,cloudSignature});
+  }
+ }catch(e){
+  console.warn('Google Sheet save verification failed. Local browser copy is still saved.',e);
+ }
+}
+
 async function saveCloudData(d){
  try{
-  const res=await fetch(GOOGLE_SHEET_WEB_APP_URL,{
+  const expectedSignature=saveSignature_(d);
+
+  // Apps Script web apps do not return normal CORS headers for POST from GitHub Pages.
+  // no-cors is required so the save request can be sent to doPost(e).
+  await fetch(GOOGLE_SHEET_WEB_APP_URL,{
    method:'POST',
+   mode:'no-cors',
    headers:{'Content-Type':'text/plain;charset=utf-8'},
    body:JSON.stringify(d)
   });
 
-  console.log('Google Sheet save response:',res.status,res.statusText);
+  console.log('Google Sheet save request sent.');
+  setTimeout(()=>verifyCloudSave_(expectedSignature),4500);
  }catch(e){
-  console.error('Google Sheet save failed. Browser backup is still saved.',e);
-  alert('Save to Google Sheet failed. Please check F12 Console / Network. Your change is only saved in this browser for now.');
+  console.error('Google Sheet save request failed. Browser backup is still saved.',e);
+  alert('Save request failed. Your change is saved in this browser for now. Please check F12 Console / Network.');
  }
 }
 
