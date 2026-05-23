@@ -662,6 +662,35 @@ const defaults={
  adminCoverRemoteOverrides:[],
  publicHolidays:cloneDefaultPublicHolidays()
 };
+
+function isValidPlannerDate(v){
+ return /^\d{4}-\d{2}-\d{2}$/.test(String(v||'').trim());
+}
+
+function forceSavePlannerData(d, expectedDate){
+ const normalized=normalizeData(d);
+ const json=JSON.stringify(normalized);
+ if(expectedDate && !json.includes(expectedDate)){
+  alert('Save check failed: the WFH date was not found inside the saved data. Please do not refresh and contact Administrator.');
+  return false;
+ }
+ localStorage.staffPlannerStaffMasterV2=json;
+ queueCloudSave(normalized);
+ return true;
+}
+
+async function forceSyncPlannerData(d, expectedDate){
+ const normalized=normalizeData(d);
+ const json=JSON.stringify(normalized);
+ if(expectedDate && !json.includes(expectedDate)){
+  alert('Sync check failed: the WFH date was not found inside the data before sending to Google Sheet.');
+  return false;
+ }
+ localStorage.staffPlannerStaffMasterV2=json;
+ await saveCloudData(normalized);
+ return true;
+}
+
 function normalizeData(d){
  if(!d.settings)d.settings={defaultAL:14,wfhSequence:['TPH+TKT','CI+TLH','ZWW+TLK'],remarks:'',calendarView:'All'};
  if(!d.settings.calendarView)d.settings.calendarView='All';
@@ -671,6 +700,8 @@ function normalizeData(d){
  if(d.members)d.members.forEach(m=>{if(m.mustChangePassword===undefined)m.mustChangePassword=false;});
  if(!d.records)d.records=[];
  if(!d.blockouts)d.blockouts=[];
+ if(!d.wfhOverrides)d.wfhOverrides=[];
+ if(!d.wfhRemoved)d.wfhRemoved=[];
  if(!d.wfhRequests)d.wfhRequests=[];
  if(!d.workTimeRequests)d.workTimeRequests=[];
  if(!d.mcClaims)d.mcClaims=[];
@@ -753,18 +784,18 @@ async function loadCloudData(){
 
 function makeFreshOperationalData(source){
  const fresh=normalizeData(JSON.parse(JSON.stringify(source||defaults)));
- fresh.records=[];
- fresh.blockouts=[];
- fresh.wfhOverrides=[];
- fresh.wfhRemoved=[];
- fresh.wfhRequests=[];
- fresh.workTimeRequests=[];
- fresh.mcClaims=[];
- fresh.generalClaims=[];
- fresh.servicePaymentsPaid=[];
- fresh.coverSwapRequests=[];
- fresh.adminCoverOverrides=[];
- fresh.adminCoverRemoteOverrides=[];
+ fresh.records=fresh.records||[];
+ fresh.blockouts=fresh.blockouts||[];
+ fresh.wfhOverrides=fresh.wfhOverrides||[];
+ fresh.wfhRemoved=fresh.wfhRemoved||[];
+ fresh.wfhRequests=fresh.wfhRequests||[];
+ fresh.workTimeRequests=fresh.workTimeRequests||[];
+ fresh.mcClaims=fresh.mcClaims||[];
+ fresh.generalClaims=fresh.generalClaims||[];
+ fresh.servicePaymentsPaid=fresh.servicePaymentsPaid||[];
+ fresh.coverSwapRequests=fresh.coverSwapRequests||[];
+ fresh.adminCoverOverrides=fresh.adminCoverOverrides||[];
+ fresh.adminCoverRemoteOverrides=fresh.adminCoverRemoteOverrides||[];
  fresh.settings=fresh.settings||{};
  fresh.settings.wfhStartIndex=8;
  fresh.settings.wfhSequence=JSON.parse(JSON.stringify(ATTACHED_WFH_SEQUENCE));
@@ -1413,7 +1444,7 @@ function adminCancelWFH(){
  alert('WFH cancelled successfully. You may now reassign another staff WFH.');
 }
 
-function adminSetWFH(){
+async function adminSetWFH(){
  const d=data();
  if(!d.wfhOverrides)d.wfhOverrides=[];
  if(!d.wfhRemoved)d.wfhRemoved=[];
@@ -1421,6 +1452,7 @@ function adminSetWFH(){
  const initial=$('adminWFHStaff').value;
  const reason=$('adminWFHReason').value.trim();
  if(!date||!initial)return alert('Please choose date and staff.');
+ if(!isValidPlannerDate(date))return alert('Invalid WFH date. Please select from the date picker.');
  const selectedMember=d.members.find(m=>m.initial===initial);
  if(!isLocalWFHEligible(selectedMember))return alert('Only active Local CSO/Admin can be assigned to WFH. Administrator, Remote and Terminated staff are excluded.');
 
@@ -1438,11 +1470,14 @@ function adminSetWFH(){
 
  d.wfhOverrides=d.wfhOverrides.filter(x=>!(x.date===date && x.initial===initial));
  d.wfhOverrides.push({id:Date.now(),date,initial,reason:reason||'Admin manual WFH change'});
- save(d);
+
+ const ok=await forceSyncPlannerData(d,date);
+ if(!ok)return;
+
  $('adminWFHDate').value='';
  $('adminWFHReason').value='';
  renderAll();
- alert('WFH changed for selected date.');
+ alert('WFH changed and synced for selected date. Please wait 10 seconds before refreshing.');
 }
 function deleteWFHOverride(id){
  const d=data();
@@ -1474,7 +1509,7 @@ function cancelWFHChange(id){
 }
 
 
-function planMakeupWFHCancel(id){
+async function planMakeupWFHCancel(id){
  if(!isAdministrator())return alert('Only Administrator can replan cancelled WFH.');
  const d=data();
  const item=(d.wfhRemoved||[]).find(x=>String(x.id)===String(id));
@@ -1483,6 +1518,7 @@ function planMakeupWFHCancel(id){
  const dateInput=$('makeupWFHDate_'+id);
  const newDate=dateInput?dateInput.value:'';
  if(!newDate)return alert('Please select the replacement WFH date.');
+ if(!isValidPlannerDate(newDate))return alert('Invalid replacement WFH date. Please select from the date picker.');
 
  if(!d.wfhOverrides)d.wfhOverrides=[];
  if(!d.wfhRemoved)d.wfhRemoved=[];
@@ -1504,9 +1540,11 @@ function planMakeupWFHCancel(id){
  item.replannedDate=newDate;
  item.replannedOn=iso(new Date());
 
- save(d);
+ const ok=await forceSyncPlannerData(d,newDate);
+ if(!ok)return;
+
  renderAll();
- alert('Replacement WFH planned successfully.');
+ alert('Replacement WFH planned and synced. Please wait 10 seconds before refreshing.');
 }
 
 function renderWFHChanges(){
