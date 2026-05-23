@@ -803,14 +803,16 @@ function queueCloudSave(d){
 
 async function saveCloudData(d){
  try{
-  await fetch(GOOGLE_SHEET_WEB_APP_URL,{
+  const res=await fetch(GOOGLE_SHEET_WEB_APP_URL,{
    method:'POST',
-   mode:'no-cors',
    headers:{'Content-Type':'text/plain;charset=utf-8'},
    body:JSON.stringify(d)
   });
+
+  console.log('Google Sheet save response:',res.status,res.statusText);
  }catch(e){
-  console.warn('Google Sheet save failed. Browser backup is still saved.',e);
+  console.error('Google Sheet save failed. Browser backup is still saved.',e);
+  alert('Save to Google Sheet failed. Please check F12 Console / Network. Your change is only saved in this browser for now.');
  }
 }
 
