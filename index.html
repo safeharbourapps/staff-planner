@@ -1255,7 +1255,12 @@ function getFinalWFHListForDate(date){
   }
  });
 
+ // Apply cancellation/removal first, then put approved/admin make-up WFH back in.
+ // This prevents a same-date wfhRemoved row from hiding a valid replanned WFH override.
  list=list.filter(x=>x==='NEEDS_REASSIGN' || !isWFHRemoved(date,x));
+ (d.wfhOverrides||[]).filter(o=>o.date===date).forEach(o=>{
+  if(o.initial && !list.includes(o.initial)) list.push(o.initial);
+ });
 
  return list;
 }
@@ -2381,11 +2386,14 @@ function getCalendarWFHList(date){
   }
  });
 
+ // Important: remove cancelled original WFH first, then add overrides/make-up WFH.
+ // Previously the later removal filter could also remove the new replanned WFH,
+ // so valid changed WFH like TLJ/TLH could disappear from the calendar.
+ list=list.filter(x=>x==='NEEDS_REASSIGN' || !isWFHRemoved(date,x));
+
  (d.wfhOverrides||[]).filter(o=>o.date===date).forEach(o=>{
   if(o.initial && !list.includes(o.initial)) list.push(o.initial);
  });
-
- list=list.filter(x=>x==='NEEDS_REASSIGN' || !isWFHRemoved(date,x));
 
  const members=data().members||[];
  const filtered=list.filter(x=>x==='NEEDS_REASSIGN' || isLocalWFHEligible(members.find(m=>m.initial===x)));
