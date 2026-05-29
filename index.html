@@ -217,6 +217,7 @@ body.isAdmin span.adminOnly.hide{
   <div><div class="logo">Staff Planner</div><div class="muted" style="color:#d8c8ad">Leave · WFH · Birthday Off · Singapore PH</div></div>
   <div class="row" style="flex:0 0 auto">
     <span id="who" class="pill">Not logged in</span>
+    <span id="appVersionLabel" class="pill" style="font-size:11px;color:#d8c8ad" title="Staff Planner version">v2026.05.29.02 | Updated 29 May 2026 01:37 PM</span>
     <button id="logoutBtn" class="secondary small hide" onclick="logout()">Logout</button>
   </div>
 
@@ -2873,17 +2874,27 @@ function getBuddyTimeline(){
 
  buddyRecords().forEach(r=>{
   eachDate(r.from,r.to).forEach(date=>{
-   if(isWithinBuddyCoverWindow(date))dateSet.add(date);
+   // Keep historical assignment dates available for calendar display.
+   // Running fairness/statistics below still count only the active planning window.
+   if(isValidPlannerDate(date))dateSet.add(date);
   });
  });
 
- const years=new Set([coverStart.getFullYear(),coverEnd.getFullYear()]);
+ const years=new Set([coverStart.getFullYear(),coverEnd.getFullYear(),viewDate.getFullYear()]);
  years.forEach(year=>{
    buddyMembers().forEach(m=>{
     const bd=birthdayOff(m,year);
-    if(bd && isWithinBuddyCoverWindow(bd))dateSet.add(bd);
+    if(bd && isValidPlannerDate(bd))dateSet.add(bd);
    });
  });
+
+ (buddyData().adminCoverOverrides||[]).forEach(r=>{
+  if(r.status==='Active'&&isValidPlannerDate(r.date))dateSet.add(r.date);
+ });
+ (buddyData().adminCoverRemoteOverrides||[]).forEach(r=>{
+  if(r.status==='Active'&&isValidPlannerDate(r.date))dateSet.add(r.date);
+ });
+
  const allDates=Array.from(dateSet).sort();
 
  allDates.forEach(date=>{
@@ -2912,7 +2923,7 @@ function getBuddyTimeline(){
      const swappedLocalAssignments=applyApprovedLocalCoverSwaps(date,localAssignments);
      const adminChangedLocalAssignments=applyAdminLocalCoverOverrides(date,swappedLocalAssignments);
      localAssignments.splice(0,localAssignments.length,...adminChangedLocalAssignments);
-     localAssignments.forEach(a=>addBuddyRunningCount(a.cover,runningCounts,stats,'local'));
+     if(isWithinBuddyCoverWindow(date))localAssignments.forEach(a=>addBuddyRunningCount(a.cover,runningCounts,stats,'local'));
    }
 
    const remoteAbsent=remoteCSOAbsentList(date);
@@ -2921,7 +2932,7 @@ function getBuddyTimeline(){
    if(remoteAbsent.length>0 && remoteLead && !isAbsentForBuddy(remoteLead.initial,date)){
      remoteAbsent.forEach(r=>{
        remoteAssignments.push({remote:r.initial,cover:remoteLead.initial,mode:'Remote Lead'});
-       addBuddyRunningCount(remoteLead.initial,runningCounts,stats,'remote');
+       if(isWithinBuddyCoverWindow(date))addBuddyRunningCount(remoteLead.initial,runningCounts,stats,'remote');
      });
    }else if(remoteLead && isAbsentForBuddy(remoteLead.initial,date)){
      let pool=sortBuddyPoolByAccumulated(availableLocalCSOPool(date,[]),runningCounts);
@@ -2931,7 +2942,7 @@ function getBuddyTimeline(){
      if(leadCover){
        remoteAssignments.push({remote:remoteLead.initial,cover:leadCover.initial,mode:'Remote Lead Cover'});
        used.add(leadCover.initial);
-       addBuddyRunningCount(leadCover.initial,runningCounts,stats,'remote');
+       if(isWithinBuddyCoverWindow(date))addBuddyRunningCount(leadCover.initial,runningCounts,stats,'remote');
      }
 
      remoteAbsent.forEach(r=>{
@@ -2939,11 +2950,11 @@ function getBuddyTimeline(){
        if(available){
          remoteAssignments.push({remote:r.initial,cover:available.initial,mode:'Remote Escalation'});
          used.add(available.initial);
-         addBuddyRunningCount(available.initial,runningCounts,stats,'remote');
+         if(isWithinBuddyCoverWindow(date))addBuddyRunningCount(available.initial,runningCounts,stats,'remote');
        }else if(pool.length){
          const fallback=pool[remoteAssignments.length % pool.length];
          remoteAssignments.push({remote:r.initial,cover:fallback.initial,mode:'Remote Escalation 1-to-2'});
-         addBuddyRunningCount(fallback.initial,runningCounts,stats,'remote');
+         if(isWithinBuddyCoverWindow(date))addBuddyRunningCount(fallback.initial,runningCounts,stats,'remote');
        }
      });
    }
@@ -2952,7 +2963,7 @@ function getBuddyTimeline(){
    const adminChangedRemoteAssignments=applyAdminRemoteCoverOverrides(date,remoteAssignments);
    adminChangedRemoteAssignments.forEach((a,i)=>{
     const before=beforeRemoteAssignments[i];
-    if(a.adminOverride && before && before.cover!==a.cover){
+    if(isWithinBuddyCoverWindow(date) && a.adminOverride && before && before.cover!==a.cover){
      subtractBuddyRunningCount(before.cover,runningCounts,stats,'remote');
      addBuddyRunningCount(a.cover,runningCounts,stats,'remote');
     }
