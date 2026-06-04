@@ -217,7 +217,7 @@ body.isAdmin span.adminOnly.hide{
   <div><div class="logo">Staff Planner</div><div class="muted" style="color:#d8c8ad">Leave · WFH · Birthday Off · Singapore PH</div></div>
   <div class="row" style="flex:0 0 auto">
     <span id="who" class="pill">Not logged in</span>
-    <span id="appVersionLabel" class="pill" style="font-size:11px;color:#d8c8ad" title="Staff Planner version">v2026.05.29.02 | Updated 29 May 2026 01:37 PM</span>
+    <span id="appVersionLabel" class="pill" style="font-size:11px;color:#d8c8ad" title="Staff Planner version">v2026.06.04.01 | Updated 04 Jun 2026 | PH Sat-only AL fix</span>
     <button id="logoutBtn" class="secondary small hide" onclick="logout()">Logout</button>
   </div>
 
@@ -2660,6 +2660,28 @@ function subtractBuddyRunningCount(initial,runningCounts,stats,coverType){
  stats[initial].total=Math.max(0,(stats[initial].total||0)-1);
 }
 
+function buddyFreezeWindowEnd_(){
+ const now=new Date();
+ // Freeze current month + following month. Rebalancing starts from month after next.
+ return new Date(now.getFullYear(),now.getMonth()+2,0,23,59,59,999);
+}
+function isWithinBuddyFrozenWindow_(date,coverStart,freezeEnd){
+ const dt=fmt(date);
+ dt.setHours(0,0,0,0);
+ return dt>=coverStart && dt<=freezeEnd;
+}
+function addDeferredBuddyDelta_(deferredDeltas,fromCover,toCover,coverType){
+ if(!fromCover || !toCover || fromCover===toCover)return;
+ deferredDeltas.push({fromCover,toCover,coverType});
+}
+function applyDeferredBuddyDeltas_(deferredDeltas,runningCounts,stats){
+ deferredDeltas.forEach(delta=>{
+  subtractBuddyRunningCount(delta.fromCover,runningCounts,stats,delta.coverType);
+  addBuddyRunningCount(delta.toCover,runningCounts,stats,delta.coverType);
+ });
+ deferredDeltas.length=0;
+}
+
 function approvedCoverSwapFor(date,absent,fromCover){
  const d=buddyData();
  return (d.coverSwapRequests||[]).find(r=>
@@ -2866,10 +2888,22 @@ function getBuddyTimeline(){
  coverEnd.setFullYear(coverEnd.getFullYear()+1);
  coverEnd.setHours(23,59,59,999);
 
+ const freezeEnd=buddyFreezeWindowEnd_();
+ const deferredBuddyDeltas=[];
+ let deferredBuddyDeltasApplied=false;
+
  function isWithinBuddyCoverWindow(date){
   const dt=fmt(date);
   dt.setHours(0,0,0,0);
   return dt>=coverStart && dt<=coverEnd;
+ }
+ function applyDeferredBuddyDeltasWhenNeeded(date){
+  const dt=fmt(date);
+  dt.setHours(0,0,0,0);
+  if(!deferredBuddyDeltasApplied && dt>freezeEnd){
+   applyDeferredBuddyDeltas_(deferredBuddyDeltas,runningCounts,stats);
+   deferredBuddyDeltasApplied=true;
+  }
  }
 
  buddyRecords().forEach(r=>{
@@ -2898,6 +2932,7 @@ function getBuddyTimeline(){
  const allDates=Array.from(dateSet).sort();
 
  allDates.forEach(date=>{
+   applyDeferredBuddyDeltasWhenNeeded(date);
    const localAssignments=[];
    const remoteAssignments=[];
 
@@ -2920,10 +2955,23 @@ function getBuddyTimeline(){
        if(fallback)localAssignments.push({absent:a.initial,cover:fallback.initial,mode:'1-to-2'});
      });
 
+     const beforeLocalAssignments=localAssignments.map(a=>({...a}));
      const swappedLocalAssignments=applyApprovedLocalCoverSwaps(date,localAssignments);
      const adminChangedLocalAssignments=applyAdminLocalCoverOverrides(date,swappedLocalAssignments);
      localAssignments.splice(0,localAssignments.length,...adminChangedLocalAssignments);
-     if(isWithinBuddyCoverWindow(date))localAssignments.forEach(a=>addBuddyRunningCount(a.cover,runningCounts,stats,'local'));
+     if(isWithinBuddyCoverWindow(date)){
+       if(isWithinBuddyFrozenWindow_(date,coverStart,freezeEnd)){
+         // Keep current month + next month stable: count original planned cover now,
+         // then apply the manual/swap balancing impact only from month after next.
+         beforeLocalAssignments.forEach(a=>addBuddyRunningCount(a.cover,runningCounts,stats,'local'));
+         localAssignments.forEach(a=>{
+          const before=beforeLocalAssignments.find(x=>x.absent===a.absent);
+          if(before && before.cover!==a.cover)addDeferredBuddyDelta_(deferredBuddyDeltas,before.cover,a.cover,'local');
+         });
+       }else{
+         localAssignments.forEach(a=>addBuddyRunningCount(a.cover,runningCounts,stats,'local'));
+       }
+     }
    }
 
    const remoteAbsent=remoteCSOAbsentList(date);
@@ -2964,8 +3012,13 @@ function getBuddyTimeline(){
    adminChangedRemoteAssignments.forEach((a,i)=>{
     const before=beforeRemoteAssignments[i];
     if(isWithinBuddyCoverWindow(date) && a.adminOverride && before && before.cover!==a.cover){
-     subtractBuddyRunningCount(before.cover,runningCounts,stats,'remote');
-     addBuddyRunningCount(a.cover,runningCounts,stats,'remote');
+     if(isWithinBuddyFrozenWindow_(date,coverStart,freezeEnd)){
+      // Do not let a manual remote cover change reshuffle current month + next month.
+      addDeferredBuddyDelta_(deferredBuddyDeltas,before.cover,a.cover,'remote');
+     }else{
+      subtractBuddyRunningCount(before.cover,runningCounts,stats,'remote');
+      addBuddyRunningCount(a.cover,runningCounts,stats,'remote');
+     }
     }
    });
    remoteAssignments.splice(0,remoteAssignments.length,...adminChangedRemoteAssignments);
@@ -2986,6 +3039,32 @@ function remoteCoverAssignmentsForDate(date){
 }
 function buddyAccumulatedCoverageStats(){
  return getBuddyTimeline().stats||{};
+}
+
+function buddyYearToDateCoverageStats(){
+ const timeline=getBuddyTimeline();
+ const members=buddyMembers();
+ const stats={};
+ members.forEach(m=>{stats[m.initial]={local:0,remote:0,total:0};});
+ const today=iso(new Date());
+ const year=String(new Date().getFullYear());
+ Object.keys(timeline.local||{}).forEach(date=>{
+  if(!date.startsWith(year+'-') || date>today)return;
+  (timeline.local[date]||[]).forEach(a=>{
+   if(!stats[a.cover])stats[a.cover]={local:0,remote:0,total:0};
+   stats[a.cover].local++;
+   stats[a.cover].total++;
+  });
+ });
+ Object.keys(timeline.remote||{}).forEach(date=>{
+  if(!date.startsWith(year+'-') || date>today)return;
+  (timeline.remote[date]||[]).forEach(a=>{
+   if(!stats[a.cover])stats[a.cover]={local:0,remote:0,total:0};
+   stats[a.cover].remote++;
+   stats[a.cover].total++;
+  });
+ });
+ return stats;
 }
 function buddyMonthCount(initial, year, monthIndex){
  const stats=buddyAccumulatedCoverageStats();
@@ -3160,12 +3239,14 @@ function renderBuddySystem(force=false){
  }
 
  const stats=buddyAccumulatedCoverageStats();
+ const ytdStats=buddyYearToDateCoverageStats();
  const members=buddyMembers();
 
- let statsHtml=`
+ function coverageStatsTableHtml(title,description,statsObj,sortByLowest=true){
+  let out=`
    <div class="card" style="margin-bottom:16px">
-     <h4>Accumulated Coverage Statistics</h4>
-     <div class="muted" style="margin-bottom:8px">Shows covering planned from today up to 1 year ahead for approved Leave / MC records and Birthday Off coverage. Terminated or inactive staff are hidden.</div>
+     <h4>${title}</h4>
+     <div class="muted" style="margin-bottom:8px">${description}</div>
      <table class="table">
        <tr>
          <th>Staff</th>
@@ -3174,32 +3255,49 @@ function renderBuddySystem(force=false){
          <th>Remote Cover</th>
          <th>Total Cover</th>
        </tr>
- `;
+  `;
 
- Object.keys(stats).sort((a,b)=>{
-   const ta=stats[a]?.total||0;
-   const tb=stats[b]?.total||0;
-   if(ta!==tb)return ta-tb;
-   return a.localeCompare(b);
- }).forEach(initial=>{
-   const member=members.find(m=>m.initial===initial);
-   if(!member)return;
-   const s=stats[initial];
-   if(s.total===0)return;
-   statsHtml+=`
-    <tr>
-      <td>${initial}</td>
-      <td>${buddyTypeOf(member)}</td>
-      <td>${s.local}</td>
-      <td>${s.remote}</td>
-      <td><b>${s.total}</b></td>
-    </tr>
-   `;
- });
+  const keys=Object.keys(statsObj).sort((a,b)=>{
+    const ta=statsObj[a]?.total||0;
+    const tb=statsObj[b]?.total||0;
+    if(sortByLowest && ta!==tb)return ta-tb;
+    if(!sortByLowest && ta!==tb)return tb-ta;
+    return a.localeCompare(b);
+  });
 
- statsHtml+=`</table></div>`;
+  keys.forEach(initial=>{
+    const member=members.find(m=>m.initial===initial);
+    if(!member)return;
+    const s=statsObj[initial];
+    if(!s || s.total===0)return;
+    out+=`
+     <tr>
+       <td>${initial}</td>
+       <td>${buddyTypeOf(member)}</td>
+       <td>${s.local}</td>
+       <td>${s.remote}</td>
+       <td><b>${s.total}</b></td>
+     </tr>
+    `;
+  });
 
- let htmlOut=statsHtml;
+  out+=`</table></div>`;
+  return out;
+ }
+
+ let htmlOut=
+  coverageStatsTableHtml(
+   'Year Cover To Date Statistics',
+   'Shows actual covering from 1 Jan this year up to today for checking against past records. Terminated or inactive staff are hidden.',
+   ytdStats,
+   false
+  )+
+  coverageStatsTableHtml(
+   'Accumulated Coverage Statistics',
+   'Shows covering planned from today up to 1 year ahead. Current month and next month are frozen from manual cover rebalancing; fairness balancing starts from the month after next.',
+   stats,
+   true
+  );
 
  for(let d=0; d<7; d++){
    const dt=new Date(startDate);
@@ -3489,7 +3587,7 @@ function phInLieuBonus(member){
  return allPublicHolidays().filter(p=>{
   const d=fmt(p[0]);
   const day=d.getDay();
-  return d<=today && (day===0||day===6);
+  return d<=today && day===6;
  }).length;
 }
 
@@ -3879,8 +3977,9 @@ function renderRecords(){
  $('recordsList').innerHTML=visible.map(r=>{
   const staff=d.members.find(m=>m.initial===r.initial);
   const staffName=staff?staff.name:r.initial;
-  const canCancel=canCancelRecord(r) && r.status!=='Cancelled' && r.status!=='Rejected' && (isAdministrator()||r.initial===currentUser?.initial);
-  const canReapply=['AL','AM','PM','EL','CL','WFH'].includes(r.type) && (isAdministrator()||r.initial===currentUser?.initial) && !(isRemoteStaffUser()&&r.type==='WFH');
+  const isPastRecord=isPastStaffRecordDate(r);
+  const canCancel=!isPastRecord && canCancelRecord(r) && r.status!=='Cancelled' && r.status!=='Rejected' && (isAdministrator()||r.initial===currentUser?.initial);
+  const canReapply=!isPastRecord && ['AL','AM','PM','EL','CL','WFH'].includes(r.type) && (isAdministrator()||r.initial===currentUser?.initial) && !(isRemoteStaffUser()&&r.type==='WFH');
   const canApprove=isAdministrator() && r.status==='Pending';
 
   return `<div class="item">
@@ -4166,20 +4265,31 @@ function renderApprovals(){
  $('approvalList').innerHTML=(leaveHtml+workTimeHtml)||'<div class="muted">No pending approval.</div>'
 }
 
+function isPastStaffRecordDate(r){
+ if(!r || !r.to) return false;
+ const today=iso(new Date());
+ return r.to<today;
+}
+
 function canCancelRecord(r){
  if(!r || r.status==='Cancelled' || r.status==='Rejected') return false;
 
- // Administrator can cancel approved/pending records for correction.
+ // Past records are locked for everyone to protect historical attendance records.
+ if(isPastStaffRecordDate(r)) return false;
+
+ // Administrator can cancel approved/pending future or current records for correction.
  if(isAdministrator()) return true;
 
- // Staff cannot cancel past records.
- const today=iso(new Date());
- return r.initial===currentUser?.initial && r.to>=today;
+ return r.initial===currentUser?.initial;
 }
 function reapplyRecord(id){
  const d=data();
  const r=d.records.find(x=>x.id===id);
  if(!r)return;
+ if(isPastStaffRecordDate(r)){
+  alert('Past staff records are locked and cannot be amended or reapplied.');
+  return;
+ }
  if(!isAdministrator() && r.initial!==currentUser.initial){
   alert('You can only reapply using your own leave / WFH record.');
   return;
