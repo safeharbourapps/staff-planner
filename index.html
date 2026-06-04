@@ -3257,7 +3257,8 @@ function refreshAdminCoverChangeOptions(){
   return;
  }
 
- currentBox.textContent=`Current cover: ${current.cover}${current.originalCover?' (changed from '+current.originalCover+')':''}`;
+ const currentChangedFrom=current.originalCover && current.originalCover!==current.cover;
+ currentBox.textContent=`Current cover: ${current.cover}${currentChangedFrom?' (changed from '+current.originalCover+')':''}`;
 
  const pool=buddyMembers().filter(m=>
   isLocalBuddyCSO(m) &&
@@ -3424,8 +3425,8 @@ function renderBuddySystem(force=false){
    localAssignments.forEach(a=>{
       htmlOut+=`
         <div style="margin-bottom:6px">
-          <span class="tag wfhchange">${a.cover} Cover ${a.absent}${a.mode&&a.mode.includes('1-to-2')?' (1-to-2)':''}${a.originalCover?' (Swapped from '+a.originalCover+')':''}</span>
-          <div class="muted">Buddy Type: Local CSO${a.adminOverride?' · Admin Manual Cover Change':(a.originalCover?' · Approved Cover Swap':'')}</div>
+          <span class="tag wfhchange">${a.cover} Cover ${a.absent}${a.mode&&a.mode.includes('1-to-2')?' (1-to-2)':''}${(a.originalCover&&a.originalCover!==a.cover)?' (Swapped from '+a.originalCover+')':''}</span>
+          <div class="muted">Buddy Type: Local CSO${a.adminOverride?' · Admin Manual Cover Change':((a.originalCover&&a.originalCover!==a.cover)?' · Approved Cover Swap':'')}</div>
         </div>
       `;
    });
@@ -3491,14 +3492,16 @@ function renderCalendar(){
   if(shouldShowLocalBuddyOnCalendar()){
     const localBuddy=localBuddyAssignmentsForDate(date);
     localBuddy.forEach(lb=>{
-      tags.push(`<span class="tag ${lb.originalCover?'coverswap':'wfhchange'}">${lb.cover} Cover ${lb.absent}${lb.mode&&lb.mode.includes('1-to-2')?' (1-to-2)':''}${lb.originalCover?' (Swapped from '+lb.originalCover+')':''}</span>`);
+      const lbChangedFrom=lb.originalCover && lb.originalCover!==lb.cover;
+      tags.push(`<span class="tag ${lbChangedFrom?'coverswap':'wfhchange'}">${lb.cover} Cover ${lb.absent}${lb.mode&&lb.mode.includes('1-to-2')?' (1-to-2)':''}${lbChangedFrom?' (Swapped from '+lb.originalCover+')':''}</span>`);
     });
   }
 
   const remoteCovers=remoteCoverAssignmentsForDate(date).filter(remoteCalendarBuddyVisible);
   remoteCovers.forEach(rc=>{
     const label=rc.remote==='TSH'?`${rc.cover} Cover TSH`:`${rc.cover} Remote Cover ${rc.remote}`;
-    tags.push(`<span class="tag remotecover">${label}${rc.mode&&rc.mode.includes('1-to-2')?' (1-to-2)':''}${rc.originalCover?' (Changed from '+rc.originalCover+')':''}</span>`);
+    const rcChangedFrom=rc.originalCover && rc.originalCover!==rc.cover;
+    tags.push(`<span class="tag remotecover">${label}${rc.mode&&rc.mode.includes('1-to-2')?' (1-to-2)':''}${rcChangedFrom?' (Changed from '+rc.originalCover+')':''}</span>`);
   });
 
   (d.workTimeRequests||[]).filter(r=>r.status==='Approved'&&r.date===date&&canShowAbsenceOnCalendar(r.initial)).forEach(r=>{
