@@ -184,6 +184,10 @@ body.isStaff .adminOnly{display:none!important}
 .mcClaimTableWrap{overflow-x:auto;margin-top:8px;padding-bottom:6px}
 .mcClaimTableWrap .table{min-width:860px}
 .mcClaimTableWrap .table th,.mcClaimTableWrap .table td{white-space:nowrap;vertical-align:top}
+.claimTableTopScroll{overflow-x:auto;overflow-y:hidden;height:18px;margin:8px 0 4px;padding-bottom:2px;border-bottom:1px solid #eadfce}
+.claimTableTopScroll>div{height:1px;min-width:1180px}
+.mcClaimTableBodyScroll{overflow-x:auto;overflow-y:visible;padding-bottom:6px}
+.mcClaimTableBodyScroll .table{min-width:1180px}
 .mcPaid{background:#e5f5ec;color:#266041}
 .mcUnpaid{background:#fff3c9;color:#78560b}
 
@@ -217,7 +221,7 @@ body.isAdmin span.adminOnly.hide{
   <div><div class="logo">Staff Planner</div><div class="muted" style="color:#d8c8ad">Leave · WFH · Birthday Off · Singapore PH</div></div>
   <div class="row" style="flex:0 0 auto">
     <span id="who" class="pill">Not logged in</span>
-    <span id="appVersionLabel" class="pill" style="font-size:11px;color:#d8c8ad" title="Staff Planner version">v2026.06.04.01 | Updated 04 Jun 2026 | PH Sat-only AL fix</span>
+    <span id="appVersionLabel" class="pill" style="font-size:11px;color:#d8c8ad" title="Staff Planner version">v2026.06.04.03 | Updated 04 Jun 2026 | Combined cover fairness</span>
     <button id="logoutBtn" class="secondary small hide" onclick="logout()">Logout</button>
   </div>
 
@@ -2660,6 +2664,25 @@ function subtractBuddyRunningCount(initial,runningCounts,stats,coverType){
  stats[initial].total=Math.max(0,(stats[initial].total||0)-1);
 }
 
+function seedBuddyRunningCountsFromStats_(runningCounts,statsObj){
+ Object.keys(statsObj||{}).forEach(initial=>{
+  runningCounts[initial]=Number(statsObj[initial]&&statsObj[initial].total)||0;
+ });
+}
+function combineBuddyCoverageStats_(historicalStats,futureStats){
+ const combined={};
+ buddyMembers().forEach(m=>{
+  const h=historicalStats&&historicalStats[m.initial] || {local:0,remote:0,total:0};
+  const f=futureStats&&futureStats[m.initial] || {local:0,remote:0,total:0};
+  combined[m.initial]={
+   local:(Number(h.local)||0)+(Number(f.local)||0),
+   remote:(Number(h.remote)||0)+(Number(f.remote)||0),
+   total:(Number(h.total)||0)+(Number(f.total)||0)
+  };
+ });
+ return combined;
+}
+
 function buddyFreezeWindowEnd_(){
  const now=new Date();
  // Freeze current month + following month. Rebalancing starts from month after next.
@@ -2878,6 +2901,9 @@ function getBuddyTimeline(){
  const runningCounts={};
  const timeline={local:{},remote:{},stats};
  buddyMembers().forEach(m=>{stats[m.initial]={local:0,remote:0,total:0};runningCounts[m.initial]=0;});
+ // Future cover balancing starts from historical cover already performed this year,
+ // while the displayed future statistics below still count only future planned cover.
+ seedBuddyRunningCountsFromStats_(runningCounts,buddyYearToDateCoverageStats());
 
  const dateSet=new Set();
 
@@ -3042,28 +3068,107 @@ function buddyAccumulatedCoverageStats(){
 }
 
 function buddyYearToDateCoverageStats(){
- const timeline=getBuddyTimeline();
  const members=buddyMembers();
  const stats={};
- members.forEach(m=>{stats[m.initial]={local:0,remote:0,total:0};});
+ const runningCounts={};
+ members.forEach(m=>{
+  stats[m.initial]={local:0,remote:0,total:0};
+  runningCounts[m.initial]=0;
+ });
+
  const today=iso(new Date());
  const year=String(new Date().getFullYear());
- Object.keys(timeline.local||{}).forEach(date=>{
-  if(!date.startsWith(year+'-') || date>today)return;
-  (timeline.local[date]||[]).forEach(a=>{
-   if(!stats[a.cover])stats[a.cover]={local:0,remote:0,total:0};
-   stats[a.cover].local++;
-   stats[a.cover].total++;
+ const dateSet=new Set();
+
+ buddyRecords().forEach(r=>{
+  eachDate(r.from,r.to).forEach(date=>{
+   if(date.startsWith(year+'-') && date<=today && isValidPlannerDate(date))dateSet.add(date);
   });
  });
- Object.keys(timeline.remote||{}).forEach(date=>{
-  if(!date.startsWith(year+'-') || date>today)return;
-  (timeline.remote[date]||[]).forEach(a=>{
+
+ members.forEach(m=>{
+  const bd=birthdayOff(m,Number(year));
+  if(bd && bd<=today && isValidPlannerDate(bd))dateSet.add(bd);
+ });
+
+ (buddyData().adminCoverOverrides||[]).forEach(r=>{
+  if(r.status==='Active' && r.date && r.date.startsWith(year+'-') && r.date<=today && isValidPlannerDate(r.date))dateSet.add(r.date);
+ });
+ (buddyData().adminCoverRemoteOverrides||[]).forEach(r=>{
+  if(r.status==='Active' && r.date && r.date.startsWith(year+'-') && r.date<=today && isValidPlannerDate(r.date))dateSet.add(r.date);
+ });
+
+ Array.from(dateSet).sort().forEach(date=>{
+  const localAssignments=[];
+  const localAbsent=localCSOAbsentList(date);
+
+  if(localAbsent.length>0){
+   let pool=sortBuddyPoolByAccumulated(availableLocalCSOPool(date,[]),runningCounts);
+   const usedCover=new Set();
+
+   localAbsent.forEach(a=>{
+    const available=pool.find(p=>!usedCover.has(p.initial));
+    if(available){
+     localAssignments.push({absent:a.initial,cover:available.initial,mode:'1-to-1'});
+     usedCover.add(available.initial);
+    }
+   });
+
+   localAbsent.forEach(a=>{
+    if(localAssignments.some(x=>x.absent===a.initial))return;
+    const fallback=pool[localAssignments.length % pool.length];
+    if(fallback)localAssignments.push({absent:a.initial,cover:fallback.initial,mode:'1-to-2'});
+   });
+
+   const swappedLocalAssignments=applyApprovedLocalCoverSwaps(date,localAssignments);
+   const finalLocalAssignments=applyAdminLocalCoverOverrides(date,swappedLocalAssignments);
+   finalLocalAssignments.forEach(a=>{
+    if(!stats[a.cover])stats[a.cover]={local:0,remote:0,total:0};
+    stats[a.cover].local++;
+    stats[a.cover].total++;
+    runningCounts[a.cover]=(runningCounts[a.cover]||0)+1;
+   });
+  }
+
+  const remoteAssignments=[];
+  const remoteAbsent=remoteCSOAbsentList(date);
+  const remoteLead=members.find(m=>isRemoteLead(m));
+
+  if(remoteAbsent.length>0 && remoteLead && !isAbsentForBuddy(remoteLead.initial,date)){
+   remoteAbsent.forEach(r=>{
+    remoteAssignments.push({remote:r.initial,cover:remoteLead.initial,mode:'Remote Lead'});
+   });
+  }else if(remoteLead && isAbsentForBuddy(remoteLead.initial,date)){
+   let pool=sortBuddyPoolByAccumulated(availableLocalCSOPool(date,[]),runningCounts);
+   const used=new Set();
+
+   const leadCover=pool.find(p=>!used.has(p.initial));
+   if(leadCover){
+    remoteAssignments.push({remote:remoteLead.initial,cover:leadCover.initial,mode:'Remote Lead Cover'});
+    used.add(leadCover.initial);
+   }
+
+   remoteAbsent.forEach(r=>{
+    const available=pool.find(p=>!used.has(p.initial));
+    if(available){
+     remoteAssignments.push({remote:r.initial,cover:available.initial,mode:'Remote Escalation'});
+     used.add(available.initial);
+    }else if(pool.length){
+     const fallback=pool[remoteAssignments.length % pool.length];
+     remoteAssignments.push({remote:r.initial,cover:fallback.initial,mode:'Remote Escalation 1-to-2'});
+    }
+   });
+  }
+
+  const finalRemoteAssignments=applyAdminRemoteCoverOverrides(date,remoteAssignments);
+  finalRemoteAssignments.forEach(a=>{
    if(!stats[a.cover])stats[a.cover]={local:0,remote:0,total:0};
    stats[a.cover].remote++;
    stats[a.cover].total++;
+   runningCounts[a.cover]=(runningCounts[a.cover]||0)+1;
   });
  });
+
  return stats;
 }
 function buddyMonthCount(initial, year, monthIndex){
@@ -3238,8 +3343,9 @@ function renderBuddySystem(force=false){
   $('buddyWeekLabel').innerHTML=`${iso(startDate)} → ${iso(endDate)}`;
  }
 
- const stats=buddyAccumulatedCoverageStats();
+ const futureStats=buddyAccumulatedCoverageStats();
  const ytdStats=buddyYearToDateCoverageStats();
+ const combinedStats=combineBuddyCoverageStats_(ytdStats,futureStats);
  const members=buddyMembers();
 
  function coverageStatsTableHtml(title,description,statsObj,sortByLowest=true){
@@ -3287,15 +3393,15 @@ function renderBuddySystem(force=false){
 
  let htmlOut=
   coverageStatsTableHtml(
-   'Year Cover To Date Statistics',
-   'Shows actual covering from 1 Jan this year up to today for checking against past records. Terminated or inactive staff are hidden.',
+   'Historical Cover Already Performed Summary',
+   'Shows cover duties already performed from 1 Jan this year up to today for checking against past records. Terminated or inactive staff are hidden.',
    ytdStats,
    false
   )+
   coverageStatsTableHtml(
-   'Accumulated Coverage Statistics',
-   'Shows covering planned from today up to 1 year ahead. Current month and next month are frozen from manual cover rebalancing; fairness balancing starts from the month after next.',
-   stats,
+   'Combined Cover Fairness Statistics',
+   'Shows Historical Cover Already Performed plus future planned cover from today up to 1 year ahead. This is used for long-run balancing. Current month and next month remain frozen from manual cover rebalancing; fairness balancing starts from the month after next.',
+   combinedStats,
    true
   );
 
@@ -4207,7 +4313,16 @@ function renderMCClaims(){
  const rows=[];
  let totalUnpaid=0,totalPaid=0;
 
- (d.mcClaims||[]).filter(c=>!month || claimMonthFromDate(c.from)===month).forEach(c=>{
+ function includeClaimForSelectedMonth(itemMonth,status){
+  if(!month)return true;
+  if(status==='Paid' || status==='Deducted')return itemMonth===month;
+  return itemMonth<=month;
+ }
+
+ (d.mcClaims||[]).filter(c=>{
+  const status=c.status||'Unpaid';
+  return includeClaimForSelectedMonth(claimMonthFromDate(c.from),status);
+ }).forEach(c=>{
   const staff=d.members.find(m=>m.initial===c.initial);
   const amount=Number(c.amount)||0;
   const status=c.status||'Unpaid';
@@ -4216,7 +4331,10 @@ function renderMCClaims(){
   rows.push({status,id:c.id,html:`<tr><td>${status==='Paid'?'<span class="muted">Paid</span>':`<button class="ok small" onclick="payClaim('mc',${c.id})">Pay</button>`}</td><td>${c.from} to ${c.to}</td><td>MC Consultation Fee${leaveNote}</td><td>${staff?staff.name:c.initial} (${c.initial})</td><td>$${amount.toFixed(2)}</td><td>${mcFileLink(c)}</td><td>${c.remarks||''}</td><td><span class="status ${status==='Paid'?'mcPaid':'mcUnpaid'}">${status}</span>${c.paidOn?`<br><span class="smallText">Paid on ${c.paidOn}</span>`:''}</td></tr>`});
  });
 
- (d.generalClaims||[]).filter(c=>!month || claimMonthFromDate(c.date)===month).forEach(c=>{
+ (d.generalClaims||[]).filter(c=>{
+  const status=c.status||'Unpaid';
+  return includeClaimForSelectedMonth(claimMonthFromDate(c.date),status);
+ }).forEach(c=>{
   const staff=d.members.find(m=>m.initial===c.initial);
   const label=c.type==='Others'?(c.otherType||'Others'):c.type;
   const amount=Number(c.amount)||0;
@@ -4225,7 +4343,11 @@ function renderMCClaims(){
   rows.push({status,id:c.id,html:`<tr><td>${status==='Paid'?'<span class="muted">Paid</span>':`<button class="ok small" onclick="payClaim('general',${c.id})">Pay</button>`}</td><td>${c.date}</td><td>${label}</td><td>${staff?staff.name:c.initial} (${c.initial})</td><td>$${amount.toFixed(2)}</td><td>${claimReceiptLink(c)}</td><td>${c.remarks||''}</td><td><span class="status ${status==='Paid'?'mcPaid':'mcUnpaid'}">${status}</span>${c.paidOn?`<br><span class="smallText">Paid on ${c.paidOn}</span>`:''}</td></tr>`});
  });
 
- (d.records||[]).filter(r=>r.type==='UPL' && r.status==='Approved' && (!month || claimMonthFromDate(r.from)===month)).forEach(r=>{
+ (d.records||[]).filter(r=>{
+  if(!(r.type==='UPL' && r.status==='Approved'))return false;
+  const deducted=getUnpaidLeaveDeductionStatus(d,r);
+  return includeClaimForSelectedMonth(claimMonthFromDate(r.from),deducted?'Deducted':'Unpaid');
+ }).forEach(r=>{
   const staff=d.members.find(m=>m.initial===r.initial);
   const deducted=getUnpaidLeaveDeductionStatus(d,r);
   const status=deducted?'Deducted':'Pending Deduction';
@@ -4236,11 +4358,13 @@ function renderMCClaims(){
   const year=Number(month.slice(0,4));
   d.members.forEach(m=>{
    const svc=serviceAnniversary(m,year);
-   if(!svc || svc.date.slice(0,7)!==month)return;
+   if(!svc)return;
+   const svcMonth=svc.date.slice(0,7);
    const amount=servicePaymentAmount(svc.years);
    if(!amount)return;
    const paid=getServicePaymentStatus(d,m.initial,svc.years,year);
    const status=paid?'Paid':'Unpaid';
+   if(!includeClaimForSelectedMonth(svcMonth,status))return;
    if(status==='Paid')totalPaid+=amount; else totalUnpaid+=amount;
    const serviceId=`${m.initial}|${svc.years}|${year}`;
    rows.push({status,id:Date.parse(svc.date)||0,html:`<tr><td>${status==='Paid'?'<span class="muted">Paid</span>':`<button class="ok small" onclick="payClaim('service','${serviceId}')">Pay</button>`}</td><td>${svc.date}</td><td>${svc.years} Year Service Payment</td><td>${m.name} (${m.initial})</td><td>$${amount.toFixed(2)}</td><td>-</td><td>${svc.years} years service milestone</td><td><span class="status ${status==='Paid'?'mcPaid':'mcUnpaid'}">${status}</span>${paid?.paidOn?`<br><span class="smallText">Paid on ${paid.paidOn}</span>`:''}</td></tr>`});
@@ -4252,8 +4376,11 @@ function renderMCClaims(){
   if(a.status==='Paid'&&b.status!=='Paid')return 1;
   return (b.id||0)-(a.id||0);
  });
- $('adminMCClaimList').innerHTML=`<div class="notice"><b>Selected month:</b> ${month||'All'}<br><b>Outstanding payment total:</b> $${totalUnpaid.toFixed(2)} &nbsp; <b>Paid total:</b> $${totalPaid.toFixed(2)}<br><span class="smallText">Unpaid Leave items are shown as wage deduction days and are processed with the Deduct button.</span></div>
-  <table class="table"><thead><tr><th>Action</th><th>Date</th><th>Claim Type</th><th>Staff</th><th>Amount / Days</th><th>File</th><th>Remarks</th><th>Status</th></tr></thead><tbody>${rows.map(r=>r.html).join('')||'<tr><td colspan="8" class="muted">No claims or wage deduction items for selected month.</td></tr>'}</tbody></table>`;
+ $('adminMCClaimList').innerHTML=`<div class="notice"><b>Selected month:</b> ${month||'All'}<br><b>Outstanding payment total:</b> $${totalUnpaid.toFixed(2)} &nbsp; <b>Paid total:</b> $${totalPaid.toFixed(2)}<br><span class="smallText">Unpaid claims from previous months remain visible in the selected/current month until Accounts clicks Pay. Paid items remain shown only in their own payment month. Unpaid Leave items are shown as wage deduction days and are processed with the Deduct button.</span></div>
+  <div id="claimTopScroll" class="claimTableTopScroll" onscroll="var b=document.getElementById('claimTableBodyScroll'); if(b)b.scrollLeft=this.scrollLeft;"><div></div></div>
+  <div id="claimTableBodyScroll" class="mcClaimTableBodyScroll" onscroll="var t=document.getElementById('claimTopScroll'); if(t)t.scrollLeft=this.scrollLeft;">
+  <table class="table"><thead><tr><th>Action</th><th>Date</th><th>Claim Type</th><th>Staff</th><th>Amount / Days</th><th>File</th><th>Remarks</th><th>Status</th></tr></thead><tbody>${rows.map(r=>r.html).join('')||'<tr><td colspan="8" class="muted">No claims or wage deduction items for selected month.</td></tr>'}</tbody></table>
+  </div>`;
 }
 
 function renderApprovals(){
