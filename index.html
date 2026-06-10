@@ -221,7 +221,7 @@ body.isAdmin span.adminOnly.hide{
   <div><div class="logo">Staff Planner</div><div class="muted" style="color:#d8c8ad">Leave · WFH · Birthday Off · Singapore PH</div></div>
   <div class="row" style="flex:0 0 auto">
     <span id="who" class="pill">Not logged in</span>
-    <span id="appVersionLabel" class="pill" style="font-size:11px;color:#d8c8ad" title="Staff Planner version">v2026.06.04.03 | Updated 04 Jun 2026 | Combined cover fairness</span>
+    <span id="appVersionLabel" class="pill" style="font-size:11px;color:#d8c8ad" title="Staff Planner version">v2026.06.10.01 | Updated 10 Jun 2026 | Cancelled WFH Calendar Fix</span>
     <button id="logoutBtn" class="secondary small hide" onclick="logout()">Logout</button>
   </div>
 
@@ -1324,7 +1324,8 @@ function getFinalWFHListForDate(date){
  // This prevents a same-date wfhRemoved row from hiding a valid replanned WFH override.
  list=list.filter(x=>x==='NEEDS_REASSIGN' || !isWFHRemoved(date,x));
  (d.wfhOverrides||[]).filter(o=>o.date===date).forEach(o=>{
-  if(o.initial && !list.includes(o.initial)) list.push(o.initial);
+  // Do not add an override that has been cancelled/replanned away from this date.
+  if(o.initial && !isWFHRemoved(date,o.initial) && !list.includes(o.initial)) list.push(o.initial);
  });
 
  return list;
@@ -1493,6 +1494,11 @@ function adminCancelWFH(){
  if(!date||!initial)return alert('Please select WFH date and staff.');
 
  if(!d.wfhRemoved)d.wfhRemoved=[];
+ if(!d.wfhOverrides)d.wfhOverrides=[];
+
+ // If the WFH being cancelled was previously created as an override/replacement,
+ // remove that override too so it no longer appears on the calendar.
+ d.wfhOverrides=d.wfhOverrides.filter(x=>!(x.date===date && x.initial===initial));
 
  const exists=d.wfhRemoved.find(x=>x.date===date && x.initial===initial);
  if(exists)return alert('WFH already cancelled for this staff on this date.');
@@ -2457,7 +2463,8 @@ function getCalendarWFHList(date){
  list=list.filter(x=>x==='NEEDS_REASSIGN' || !isWFHRemoved(date,x));
 
  (d.wfhOverrides||[]).filter(o=>o.date===date).forEach(o=>{
-  if(o.initial && !list.includes(o.initial)) list.push(o.initial);
+  // Do not add an override that has been cancelled/replanned away from this date.
+  if(o.initial && !isWFHRemoved(date,o.initial) && !list.includes(o.initial)) list.push(o.initial);
  });
 
  const members=data().members||[];
