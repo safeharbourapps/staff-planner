@@ -221,7 +221,7 @@ body.isAdmin span.adminOnly.hide{
   <div><div class="logo">Staff Planner</div><div class="muted" style="color:#d8c8ad">Leave · WFH · Birthday Off · Singapore PH</div></div>
   <div class="row" style="flex:0 0 auto">
     <span id="who" class="pill">Not logged in</span>
-    <span id="appVersionLabel" class="pill" style="font-size:11px;color:#d8c8ad" title="Staff Planner version">v2026.06.10.01 | Updated 10 Jun 2026 | Cancelled WFH Calendar Fix</span>
+    <span id="appVersionLabel" class="pill" style="font-size:11px;color:#d8c8ad" title="Staff Planner version">v2026.06.10.03 | Updated 10 Jun 2026 | AL Validation + Reset Safety Fix</span>
     <button id="logoutBtn" class="secondary small hide" onclick="logout()">Logout</button>
   </div>
 
@@ -951,11 +951,10 @@ function checkPlannerSoundNotifications(){
 async function init(){
  const cloudData=await loadCloudData();
  cloudSaveReady=true;
- const currentData=cloudData || data();
- if(!currentData.settings || currentData.settings.cleanStartMarker!==FRESH_START_MARKER){
-  save(makeFreshOperationalData(currentData));
- }else if(!localStorage.staffPlannerStaffMasterV2){
-  save(makeFreshOperationalData(defaults));
+ // Safety: never auto-reset or auto-write default/fresh data on page load.
+ // Google Sheet is the master database. If cloud data is missing or invalid, use local/browser data only.
+ if(!cloudData && !localStorage.staffPlannerStaffMasterV2){
+  localStorage.staffPlannerStaffMasterV2=JSON.stringify(normalizeData(JSON.parse(JSON.stringify(defaults))));
  }
  renderAll();
  if(currentUser && !isAdministrator() && currentUser.mustChangePassword){
@@ -1755,7 +1754,7 @@ function submitRequest(){
  }
 
  // Balance check: if no AL / CCL balance, staff cannot apply that leave type. They may apply Unpaid Leave instead.
- const alBal=alEntitlement(member)+phInLieuBonus(member)-used(initial,'AL');
+ const alBal=alEntitlement(member)+phInLieuBonus(member)-used(initial,'AL')+alAdjustmentTotal(initial);
  const cclBal=childcareBalance(member);
 
  if(['AL','AM','PM','EL'].includes(type) && units>alBal){
