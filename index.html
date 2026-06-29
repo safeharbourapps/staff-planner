@@ -221,7 +221,7 @@ body.isAdmin span.adminOnly.hide{
   <div><div class="logo">Staff Planner</div><div class="muted" style="color:#d8c8ad">Leave · WFH · Birthday Off · Singapore PH</div></div>
   <div class="row" style="flex:0 0 auto">
     <span id="who" class="pill">Not logged in</span>
-    <span id="appVersionLabel" class="pill" style="font-size:11px;color:#d8c8ad" title="Staff Planner version">v2026.06.10.03 | Updated 10 Jun 2026 | AL Validation + Reset Safety Fix</span>
+    <span id="appVersionLabel" class="pill" style="font-size:11px;color:#d8c8ad" title="Staff Planner version">v2026.06.29.05 | Updated 29 Jun 2026 | Split Legacy Cross-Year Usage</span>
     <button id="logoutBtn" class="secondary small hide" onclick="logout()">Logout</button>
   </div>
 
@@ -316,6 +316,13 @@ body.isAdmin span.adminOnly.hide{
             <input id="mcToDate" type="date" onchange="syncMCTo();updateMCPreview()">
           </div>
         </div>
+
+        <label>MC Duration</label>
+        <select id="mcDuration" onchange="syncMCDuration();updateMCPreview()">
+          <option value="FULL">Full Day</option>
+          <option value="AM">AM Half Day</option>
+          <option value="PM">PM Half Day</option>
+        </select>
 
         <div class="mcQuickBtns">
           <button class="secondary small" type="button" onclick="setMCDays(1)">1 Day</button>
@@ -664,6 +671,7 @@ const defaults={
  coverSwapRequests:[],
  adminCoverOverrides:[],
  adminCoverRemoteOverrides:[],
+ buddyLocks:[],
  publicHolidays:cloneDefaultPublicHolidays()
 };
 function normalizeData(d){
@@ -684,6 +692,7 @@ function normalizeData(d){
  if(!d.coverSwapRequests)d.coverSwapRequests=[];
  if(!d.adminCoverOverrides)d.adminCoverOverrides=[];
  if(!d.adminCoverRemoteOverrides)d.adminCoverRemoteOverrides=[];
+ if(!d.buddyLocks)d.buddyLocks=[];
  if(!d.publicHolidays)d.publicHolidays=cloneDefaultPublicHolidays();
  if(Array.isArray(d.publicHolidays)){
    const converted={};
@@ -784,6 +793,7 @@ function makeFreshOperationalData(source){
  fresh.coverSwapRequests=[];
  fresh.adminCoverOverrides=[];
  fresh.adminCoverRemoteOverrides=[];
+ fresh.buddyLocks=[];
  fresh.settings=fresh.settings||{};
  fresh.settings.wfhStartIndex=8;
  fresh.settings.wfhSequence=JSON.parse(JSON.stringify(ATTACHED_WFH_SEQUENCE));
@@ -1030,13 +1040,28 @@ function updatePendingTabAlerts(){
 }
 
 
-function alAdjustmentTotal(initial){
+function currentPlannerYear(){
+ return new Date().getFullYear();
+}
+function recordYear_(r){
+ const raw=(r&&r.from)||(r&&r.date)||(r&&r.createdAt)||'';
+ const year=Number(String(raw).slice(0,4));
+ return year||currentPlannerYear();
+}
+function adjustmentYear_(a){
+ const year=Number(a&&a.year);
+ if(year)return year;
+ const raw=(a&&a.createdAt)||'';
+ const parsed=Number(String(raw).slice(0,4));
+ return parsed||currentPlannerYear();
+}
+function alAdjustmentTotal(initial,year=currentPlannerYear()){
  const d=data();
  return (d.alAdjustments||[])
-  .filter(a=>a.initial===initial)
-  .reduce((s,a)=>{
-    return s + (a.type==='deduct' ? -(+a.days||0) : (+a.days||0));
-  },0);
+   .filter(a=>a.initial===initial && adjustmentYear_(a)===year)
+   .reduce((s,a)=>{
+     return s + (a.type==='deduct' ? -(+a.days||0) : (+a.days||0));
+   },0);
 }
 
 function saveALAdjustment(){
@@ -1047,17 +1072,19 @@ function saveALAdjustment(){
  const type=$('alAdjustType').value;
  const days=parseFloat($('alAdjustDays').value||0);
  const reason=$('alAdjustReason').value.trim();
+ const year=currentPlannerYear();
 
  if(!initial) return alert('Please select staff.');
  if(!days || days<=0) return alert('Please enter adjustment days.');
 
  d.alAdjustments.push({
    id:Date.now(),
-   initial,
-   type,
-   days,
-   reason,
-   createdAt:new Date().toISOString()
+    initial,
+    type,
+    days,
+    year,
+    reason,
+    createdAt:new Date().toISOString()
  });
 
  save(d);
@@ -1081,7 +1108,7 @@ function renderALAdjustmentList(){
   .reverse()
   .map(a=>`
    <div class="item">
-     <b>${a.initial} - ${a.type==='deduct'?'Deduct':'Add'} ${a.days} Day(s)</b>
+     <b>${a.initial} - ${a.type==='deduct'?'Deduct':'Add'} ${a.days} Day(s) (${adjustmentYear_(a)})</b>
      <div class="muted">${a.reason||'-'}</div>
    </div>
   `).join('') || '<div class="muted">No AL adjustments yet.</div>';
@@ -1733,6 +1760,10 @@ function submitRequest(){
  const d=data(), initial=$('applyStaff').value, member=d.members.find(m=>m.initial===initial), type=$('applyType').value;
  if(!isActiveMember(member))return alert('This staff is terminated and cannot submit leave.');
  const from=$('fromDate').value, to=$('toDate').value||from; if(!from||!to)return alert('Please choose date.');
+ const leaveYear=Number(from.slice(0,4));
+ if(from.slice(0,4)!==to.slice(0,4)){
+  return alert('Please submit separate applications for different leave years.');
+ }
  const leaveReason=$('reason').value.trim();
  if(!leaveReason)return alert('Please enter reason before submitting leave application.');
  let needApproval=false, notes=[];
@@ -1754,11 +1785,11 @@ function submitRequest(){
  }
 
  // Balance check: if no AL / CCL balance, staff cannot apply that leave type. They may apply Unpaid Leave instead.
- const alBal=alEntitlement(member)+phInLieuBonus(member)-used(initial,'AL')+alAdjustmentTotal(initial);
+ const alBal=alEntitlement(member,leaveYear)+phInLieuBonus(member,leaveYear)-used(initial,'AL',leaveYear)+alAdjustmentTotal(initial,leaveYear);
  const cclBal=childcareBalance(member);
 
  if(['AL','AM','PM','EL'].includes(type) && units>alBal){
-  return alert('Insufficient Annual Leave balance. Please apply Unpaid Leave instead, subject to Administrator approval.');
+  return alert('Insufficient Annual Leave balance for '+leaveYear+'. Please apply Unpaid Leave instead, subject to Administrator approval.');
  }
 
  if(['CCL','CCLAM','CCLPM'].includes(type)){
@@ -1815,6 +1846,7 @@ function submitRequest(){
  }
 
  const status=needApproval?'Pending':'Approved';
+ if(status==='Approved')captureBuddyLocksForFrozenWindow_(d,'Auto-approved leave submitted');
  d.records.push({id:Date.now(),initial,type,from,to,reason:$('reason').value,units,status,notes:notes.join(' ')});
  save(d);$('applyMsg').classList.remove('hide');$('applyMsg').innerHTML=`Submitted as <b>${status}</b>. ${notes.join(' ')}`;renderAll();
 }
@@ -1822,6 +1854,10 @@ function submitRequest(){
 function syncMCTo(){
  const from=$('mcDate')&&$('mcDate').value;
  const to=$('mcToDate')&&$('mcToDate').value;
+ if(isHalfDayMC() && from){
+  $('mcToDate').value=from;
+  return;
+ }
  if($('mcDate') && $('mcToDate') && from && (!to || !validPlannerDateValue(to) || fmt(to)<fmt(from))){
   $('mcToDate').value=from;
  }
@@ -1829,10 +1865,26 @@ function syncMCTo(){
 function setMCDays(days){
  const from=$('mcDate').value;
  if(!from)return alert('Please choose MC From date first.');
+ if($('mcDuration') && $('mcDuration').value!=='FULL' && days>1){
+  $('mcToDate').value=from;
+  return alert('Half-day MC can only be submitted for one date.');
+ }
  const d=fmt(from);
  d.setDate(d.getDate()+days-1);
  $('mcToDate').value=iso(d);
  updateMCPreview();
+}
+function selectedMCDuration(){
+ return ($('mcDuration')&&$('mcDuration').value)||'FULL';
+}
+function isHalfDayMC(){
+ return selectedMCDuration()==='AM' || selectedMCDuration()==='PM';
+}
+function syncMCDuration(){
+ if(isHalfDayMC()){
+  const from=$('mcDate')&&$('mcDate').value;
+  if(from && $('mcToDate'))$('mcToDate').value=from;
+ }
 }
 function selectedMCWFHDates(){
  const boxes=document.querySelectorAll('.mcwfhDayOption:checked');
@@ -1840,6 +1892,11 @@ function selectedMCWFHDates(){
 }
 function renderMCWFHOptions(){
  if(!$('mcWFHOptions'))return;
+ if(isHalfDayMC()){
+  $('mcWFHOptions').classList.add('hide');
+  $('mcWFHOptions').innerHTML='';
+  return;
+ }
  const d=data();
  const initial=$('mcStaff')?$('mcStaff').value:'';
  const from=$('mcDate')?$('mcDate').value:'';
@@ -1881,12 +1938,13 @@ function updateMCPreview(){
  }
  const workingDates=eachDate(from,to).filter(x=>isWorkingDay(x,member));
  const allDates=eachDate(from,to);
- const mcWFHSet=new Set(selectedMCWFHDates());
+ const mcWFHSet=isHalfDayMC()?new Set():new Set(selectedMCWFHDates());
  const realMCDates=workingDates.filter(x=>!mcWFHSet.has(x));
- const units=realMCDates.length;
+ const units=isHalfDayMC() && realMCDates.length ? 0.5 : realMCDates.length;
  const mcWFHCount=allDates.filter(x=>mcWFHSet.has(x)).length;
  const bal=(mcEntitlement(member)-used(initial,'MC')-units).toFixed(1).replace('.0','');
- $('mcPreview').innerHTML=`Actual MC days to deduct: <b>${units}</b><br>MC-WFH selected days: <b>${mcWFHCount}</b><br>Estimated MC balance after submission: <b>${bal}</b>`;
+ const durationText=isHalfDayMC()?`${selectedMCDuration()} Half Day`:'Full Day';
+ $('mcPreview').innerHTML=`MC duration: <b>${durationText}</b><br>Actual MC days to deduct: <b>${units}</b><br>MC-WFH selected days: <b>${mcWFHCount}</b><br>Estimated MC balance after submission: <b>${bal}</b>`;
 }
 
 function cancelOverlappingLeaveForMC(initial, from, to){
@@ -1998,18 +2056,27 @@ async function submitMC(){
 
  const d=data(), initial=$('mcStaff').value, date=$('mcDate').value, to=($('mcToDate')&&$('mcToDate').value)||date;
  if(!date)return alert('Please choose MC date.');
+ const mcYear=Number(date.slice(0,4));
+ if(date.slice(0,4)!==to.slice(0,4)){
+  return alert('Please submit separate MC applications for different leave years.');
+ }
  const member=d.members.find(m=>m.initial===initial);
  if(!isActiveMember(member))return alert('This staff is terminated and cannot submit MC.');
  const allDates=eachDate(date,to);
  const workingDates=allDates.filter(x=>isWorkingDay(x,member));
- const mcWFHSet=new Set(selectedMCWFHDates());
+ const halfDayMC=isHalfDayMC();
+ const mcSession=selectedMCDuration();
+ if(halfDayMC && date!==to)return alert('Half-day MC can only be submitted for one date. Please set MC To same as MC From.');
+ const mcWFHSet=halfDayMC?new Set():new Set(selectedMCWFHDates());
  const mcWFHDates=allDates.filter(x=>mcWFHSet.has(x));
  const realMCDates=workingDates.filter(x=>!mcWFHSet.has(x));
- const units=realMCDates.length;
+ const mcUnitPerDate=halfDayMC?0.5:1;
+ const units=realMCDates.length*mcUnitPerDate;
  if(workingDates.length<=0 && mcWFHDates.length<=0)return alert('Selected MC period has no working days for this staff. Please select MC-WFH date if staff is working from home.');
  if(units<=0 && mcWFHDates.length<=0)return alert('Please select at least one actual MC or MC-WFH date.');
 
- const cancelledCount=realMCDates.length ? cancelOverlappingLeaveForMC(initial,realMCDates[0],realMCDates[realMCDates.length-1]) : 0;
+ captureBuddyLocksForFrozenWindow_(d,'MC submitted');
+ const cancelledCount=(!halfDayMC && realMCDates.length) ? cancelOverlappingLeaveForMC(initial,realMCDates[0],realMCDates[realMCDates.length-1]) : 0;
 
  const latest=data();
  const file=$('mcFile').files[0];
@@ -2018,19 +2085,19 @@ async function submitMC(){
  const remarks=$('mcRemarks').value;
  const consultFee=Number(($('mcConsultFee')&&$('mcConsultFee').value)||0)||0;
  const latestMember=latest.members.find(m=>m.initial===initial)||member;
- const mcBal=Math.max(0,mcEntitlement(latestMember)-used(initial,'MC'));
- const alBal=Math.max(0,alEntitlement(latestMember)+phInLieuBonus(latestMember)-used(initial,'AL'));
+ const mcBal=Math.max(0,mcEntitlement(latestMember)-used(initial,'MC',mcYear));
+ const alBal=Math.max(0,alEntitlement(latestMember,mcYear)+phInLieuBonus(latestMember,mcYear)-used(initial,'AL',mcYear)+alAdjustmentTotal(initial,mcYear));
  let remainingMC=mcBal;
  let remainingAL=alBal;
  const buckets={MC:[],AL:[],UPL:[]};
 
  realMCDates.forEach(day=>{
-  if(remainingMC>=1){
+  if(remainingMC>=mcUnitPerDate){
    buckets.MC.push(day);
-   remainingMC-=1;
-  }else if(remainingAL>=1){
+   remainingMC-=mcUnitPerDate;
+  }else if(remainingAL>=mcUnitPerDate){
    buckets.AL.push(day);
-   remainingAL-=1;
+   remainingAL-=mcUnitPerDate;
   }else{
    buckets.UPL.push(day);
   }
@@ -2038,8 +2105,8 @@ async function submitMC(){
 
  const baseId=Date.now();
  const noteParts=[];
- if(buckets.AL.length) noteParts.push(buckets.AL.length+' day(s) exceeded MC entitlement and deducted as Annual Leave.');
- if(buckets.UPL.length) noteParts.push(buckets.UPL.length+' day(s) exceeded MC/AL entitlement and captured as Unpaid Leave.');
+ if(buckets.AL.length) noteParts.push((buckets.AL.length*mcUnitPerDate)+' day(s) exceeded MC entitlement and deducted as Annual Leave.');
+ if(buckets.UPL.length) noteParts.push((buckets.UPL.length*mcUnitPerDate)+' day(s) exceeded MC/AL entitlement and captured as Unpaid Leave.');
  const autoNote=noteParts.join(' ');
 
  const createdRecordIds=[];
@@ -2047,19 +2114,21 @@ async function submitMC(){
   buildContiguousDateGroups(dates).forEach((g,idx)=>{
    const recordId=baseId+offset+idx;
    createdRecordIds.push(recordId);
-   latest.records.push({
-    id:recordId,
-    initial,
-    type,
-    from:g[0],
-    to:g[g.length-1],
-    reason:remarks,
-    units:g.length,
-    status:'Approved',
-    file:fileName,
-    consultFee:consultFee,
-    notes:label+(autoNote?' '+autoNote:'')
-   });
+    const recordUnits=type==='MCWFH'?g.length:(halfDayMC?0.5:g.length);
+    latest.records.push({
+     id:recordId,
+     initial,
+     type,
+     from:g[0],
+     to:g[g.length-1],
+     reason:remarks,
+     units:recordUnits,
+     status:'Approved',
+     file:fileName,
+     consultFee:consultFee,
+     mcSession:halfDayMC && type!=='MCWFH' ? mcSession : '',
+     notes:label+(halfDayMC && type!=='MCWFH' ? ' '+mcSession+' half-day MC.' : '')+(autoNote?' '+autoNote:'')
+    });
   });
  };
 
@@ -2091,6 +2160,7 @@ async function submitMC(){
 
  $('mcDate').value='';
  if($('mcToDate')) $('mcToDate').value='';
+ if($('mcDuration')) $('mcDuration').value='FULL';
  if($('mcConsultFee')) $('mcConsultFee').value='';
  $('mcRemarks').value='';
  if($('mcFile')) $('mcFile').value='';
@@ -2098,9 +2168,9 @@ async function submitMC(){
  if($('mcWFHOptions')){$('mcWFHOptions').innerHTML='';$('mcWFHOptions').classList.add('hide');}
 
  const breakdown=[];
- if(buckets.MC.length)breakdown.push(buckets.MC.length+' MC');
- if(buckets.AL.length)breakdown.push(buckets.AL.length+' AL');
- if(buckets.UPL.length)breakdown.push(buckets.UPL.length+' Unpaid Leave');
+ if(buckets.MC.length)breakdown.push((buckets.MC.length*mcUnitPerDate)+' MC');
+ if(buckets.AL.length)breakdown.push((buckets.AL.length*mcUnitPerDate)+' AL');
+ if(buckets.UPL.length)breakdown.push((buckets.UPL.length*mcUnitPerDate)+' Unpaid Leave');
  if(mcWFHDates.length)breakdown.push(mcWFHDates.length+' MC-WFH');
  alert('MC submitted. Deduction breakdown: '+breakdown.join(', ')+'. '+(cancelledCount>0?cancelledCount+' overlapping leave record(s) were automatically cancelled and replaced by MC. ':'')+'File name recorded: '+fileName+(consultFee>0?'. Consultation fee: $'+consultFee.toFixed(2):''));
  renderAll();
@@ -2114,7 +2184,16 @@ async function submitMC(){
 
 
 function approve(id,status){
- if(!isAdministrator())return alert('Only Administrator can approve or reject leave.');const d=data(); let r=d.records.find(x=>x.id===id); if(r){r.status=status;save(d);renderAll()}}
+ if(!isAdministrator())return alert('Only Administrator can approve or reject leave.');
+ const d=data();
+ let r=d.records.find(x=>x.id===id);
+ if(r){
+  if(status==='Approved' && r.status!=='Approved')captureBuddyLocksForFrozenWindow_(d,'Admin approved leave');
+  r.status=status;
+  save(d);
+  renderAll();
+ }
+}
 
 
 
@@ -2357,7 +2436,7 @@ function updateAutoALPreview(){
  const base=alBaseEntitlement(m);
  const max=maxALCap(m);
  const start=alEffectiveStartDate(m)||'Not confirmed yet';
- $('autoALPreview').innerHTML=`Current year entitlement: <b>${auto.toFixed(1).replace('.0','')} day(s)</b> · Base ${base} days · Maximum ${max} days · Effective from ${start}`;
+ $('autoALPreview').innerHTML=`Current year entitlement: <b>${auto.toFixed(1).replace('.0','')} day(s)</b> · Base ${base} days · Maximum ${max} days · Effective from ${start}${!alEffectiveStartDate(m)?' - no AL until confirmation date is entered':''}`;
 }
 function changePassword(){
  const oldP=$('oldPassword').value;
@@ -2547,11 +2626,18 @@ function calendarLeaveLabel(r){
  if(r.type==='CCLPM')return 'CCL PM';
  if(r.type==='UPL')return 'Unpaid Leave';
  if(r.type==='MCWFH')return 'MC-WFH (No Covering)';
+ if(r.type==='MC' && r.mcSession==='AM')return 'MC AM';
+ if(r.type==='MC' && r.mcSession==='PM')return 'MC PM';
 
  if(['AL','AM','PM'].includes(r.type)){
   const n=(r.notes||'').toLowerCase();
   const isWithin7Days=n.includes('within 7 days');
-  return isWithin7Days ? 'Urgent AL' : r.type;
+  if(isWithin7Days){
+   if(r.type==='AM')return 'Urgent AL-AM';
+   if(r.type==='PM')return 'Urgent AL-PM';
+   return 'Urgent AL';
+  }
+  return r.type;
  }
 
  return r.type||'AL';
@@ -2694,10 +2780,71 @@ function buddyFreezeWindowEnd_(){
  // Freeze current month + following month. Rebalancing starts from month after next.
  return new Date(now.getFullYear(),now.getMonth()+2,0,23,59,59,999);
 }
+function buddyFreezeWindowStart_(){
+ const start=new Date();
+ start.setHours(0,0,0,0);
+ return start;
+}
 function isWithinBuddyFrozenWindow_(date,coverStart,freezeEnd){
  const dt=fmt(date);
  dt.setHours(0,0,0,0);
  return dt>=coverStart && dt<=freezeEnd;
+}
+function isBuddyLockDateInFreezeWindow_(date){
+ return isWithinBuddyFrozenWindow_(date,buddyFreezeWindowStart_(),buddyFreezeWindowEnd_());
+}
+function buddyLockKey_(coverType,date,absent){
+ return [coverType,date,absent].join('|');
+}
+function activeBuddyLockFor_(coverType,date,absent){
+ const d=buddyData();
+ return (d.buddyLocks||[]).find(r=>
+  (r.status||'Active')==='Active' &&
+  r.coverType===coverType &&
+  r.date===date &&
+  (coverType==='remote'?r.remote:r.absent)===absent
+ );
+}
+function isBuddyLockCoverAvailable_(coverType,cover,date){
+ const m=buddyMembers().find(x=>x.initial===cover);
+ if(!m || isAbsentForBuddy(cover,date))return false;
+ return coverType==='remote' ? (isLocalBuddyCSO(m)||isRemoteLead(m)) : isLocalBuddyCSO(m);
+}
+function lockedLocalAssignmentFor_(date,absent){
+ const lock=activeBuddyLockFor_('local',date,absent);
+ if(!lock || !isBuddyLockCoverAvailable_('local',lock.cover,date))return null;
+ return {absent,cover:lock.cover,mode:'Locked Plan',buddyLockId:lock.id};
+}
+function captureBuddyLocksForFrozenWindow_(d,reason){
+ if(!d || !d.records)return;
+ if(!d.buddyLocks)d.buddyLocks=[];
+ const existing=new Set((d.buddyLocks||[])
+  .filter(r=>(r.status||'Active')==='Active')
+  .map(r=>buddyLockKey_(r.coverType,r.date,r.coverType==='remote'?r.remote:r.absent)));
+ const timeline=getBuddyTimeline();
+ const today=buddyFreezeWindowStart_();
+ const freezeEnd=buddyFreezeWindowEnd_();
+ const nowText=iso(new Date());
+
+ Object.keys(timeline.local||{}).forEach(date=>{
+  if(!isWithinBuddyFrozenWindow_(date,today,freezeEnd))return;
+  (timeline.local[date]||[]).forEach(a=>{
+   const key=buddyLockKey_('local',date,a.absent);
+   if(existing.has(key) || !a.cover)return;
+   d.buddyLocks.push({
+    id:Date.now()+d.buddyLocks.length,
+    coverType:'local',
+    date,
+    absent:a.absent,
+    cover:a.cover,
+    status:'Active',
+    reason:reason||'Auto locked current/next month buddy plan',
+    createdOn:nowText,
+    createdBy:currentUser?currentUser.initial:'SYSTEM'
+   });
+   existing.add(key);
+  });
+ });
 }
 function addDeferredBuddyDelta_(deferredDeltas,fromCover,toCover,coverType){
  if(!fromCover || !toCover || fromCover===toCover)return;
@@ -2968,23 +3115,38 @@ function getBuddyTimeline(){
    const localAssignments=[];
    const remoteAssignments=[];
 
-   const localAbsent=localCSOAbsentList(date);
-   if(localAbsent.length>0){
-     let pool=sortBuddyPoolByAccumulated(availableLocalCSOPool(date,[]),runningCounts);
-     const usedCover=new Set();
+    const localAbsent=localCSOAbsentList(date);
+    if(localAbsent.length>0){
+      const lockedAbsent=new Set();
+      const usedCover=new Set();
 
-     localAbsent.forEach(a=>{
-       const available=pool.find(p=>!usedCover.has(p.initial));
-       if(available){
-         localAssignments.push({absent:a.initial,cover:available.initial,mode:'1-to-1'});
-         usedCover.add(available.initial);
-       }
+      localAbsent.forEach(a=>{
+        const locked=lockedLocalAssignmentFor_(date,a.initial);
+        if(locked){
+          localAssignments.push(locked);
+          lockedAbsent.add(a.initial);
+          usedCover.add(locked.cover);
+        }
+      });
+
+      let pool=sortBuddyPoolByAccumulated(
+        availableLocalCSOPool(date,[]).filter(m=>!usedCover.has(m.initial)),
+        runningCounts
+      );
+
+      localAbsent.forEach(a=>{
+        if(lockedAbsent.has(a.initial))return;
+        const available=pool.find(p=>!usedCover.has(p.initial));
+        if(available){
+          localAssignments.push({absent:a.initial,cover:available.initial,mode:'1-to-1'});
+          usedCover.add(available.initial);
+        }
      });
 
-     localAbsent.forEach(a=>{
-       if(localAssignments.some(x=>x.absent===a.initial))return;
-       const fallback=pool[localAssignments.length % pool.length];
-       if(fallback)localAssignments.push({absent:a.initial,cover:fallback.initial,mode:'1-to-2'});
+      localAbsent.forEach(a=>{
+        if(localAssignments.some(x=>x.absent===a.initial))return;
+        const fallback=pool[localAssignments.length % pool.length];
+        if(fallback)localAssignments.push({absent:a.initial,cover:fallback.initial,mode:'1-to-2'});
      });
 
      const beforeLocalAssignments=localAssignments.map(a=>({...a}));
@@ -3559,8 +3721,7 @@ function urgentLeaveTaken(initial){
  return d.records
   .filter(r=>r.initial===initial && r.status==='Approved' && ['AL','EL','AM','PM'].includes(r.type))
   .reduce((sum,r)=>{
-   const label=calendarLeaveLabel(r);
-   if(label==='Urgent AL') return sum+(+r.units||0);
+   if(isUrgentAnnualLeaveRecord(r)) return sum+(+r.units||0);
    return sum;
   },0);
 }
@@ -3576,7 +3737,7 @@ function childcareBalance(member){
 }
 
 
-function mcClaimDeductibleDates(initial){
+function mcClaimDeductibleDates(initial,year=currentPlannerYear()){
  const d=data();
  const member=(d.members||[]).find(m=>m.initial===initial);
  if(!member)return [];
@@ -3603,27 +3764,40 @@ function mcClaimDeductibleDates(initial){
   if(!from)return;
   const wfhSet=new Set(Array.isArray(c.wfhDates)?c.wfhDates:String(c.wfhDates||'').split(',').map(x=>x.trim()).filter(Boolean));
   safeEachDate(from,to).forEach(day=>{
-   if(isWorkingDay(day,member) && !wfhSet.has(day) && !represented.has(day))dates.add(day);
+   if(day.slice(0,4)===String(year) && isWorkingDay(day,member) && !wfhSet.has(day) && !represented.has(day))dates.add(day);
   });
  });
  return Array.from(dates).sort();
 }
 function isFallbackMCClaimDate(initial,date){
- return mcClaimDeductibleDates(initial).includes(date);
+ return mcClaimDeductibleDates(initial,Number(String(date).slice(0,4))||currentPlannerYear()).includes(date);
 }
 
-function used(initial,typeGroup){
- const d=data();
- const recordUsed=d.records
-  .filter(r=>r.initial===initial && r.status==='Approved' && r.status!=='Pending' && isValidPlannerDate(r.from) && isValidPlannerDate(r.to))
-  .reduce((s,r)=>{
-   if(typeGroup==='AL' && ['AL','AM','PM','EL'].includes(r.type)) return s+(+r.units||0);
-   if(typeGroup==='MC' && r.type==='MC') return s+(+r.units||0);
-   if(typeGroup==='CL' && r.type==='CL') return s+(+r.units||0);
-   return s;
-  },0);
- if(typeGroup==='MC') return recordUsed + mcClaimDeductibleDates(initial).length;
- return recordUsed;
+function used(initial,typeGroup,year=currentPlannerYear()){
+  const d=data();
+  const member=(d.members||[]).find(m=>m.initial===initial);
+  const recordUsed=d.records
+   .filter(r=>r.initial===initial && r.status==='Approved' && r.status!=='Pending' && isValidPlannerDate(r.from) && isValidPlannerDate(r.to))
+   .reduce((s,r)=>{
+    if(typeGroup==='AL' && ['AL','AM','PM','EL'].includes(r.type)) return s+recordUnitsInYear_(r,year,member);
+    if(typeGroup==='MC' && r.type==='MC') return s+recordUnitsInYear_(r,year,member);
+    if(typeGroup==='CL' && r.type==='CL') return s+recordUnitsInYear_(r,year,member);
+    return s;
+   },0);
+  if(typeGroup==='MC') return recordUsed + mcClaimDeductibleDates(initial,year).length;
+  return recordUsed;
+}
+
+function recordUnitsInYear_(r,year,member){
+ const units=+r.units||0;
+ if(!isValidPlannerDate(r.from) || !isValidPlannerDate(r.to))return 0;
+ if(recordYear_(r)===year && Number(String(r.to).slice(0,4))===year)return units;
+ const dates=eachDate(r.from,r.to).filter(date=>Number(String(date).slice(0,4))===year);
+ if(!dates.length)return 0;
+ if(['AM','PM','CCLAM','CCLPM'].includes(r.type))return dates.length*0.5;
+ if(r.type==='MC' && units===0.5)return dates.length*0.5;
+ const workingDates=dates.filter(date=>!member || isWorkingDay(date,member));
+ return workingDates.length;
 }
 
 function defaultALBase(member){
@@ -3645,7 +3819,7 @@ function alBaseEntitlement(member){
 
 function alEffectiveStartDate(member){
  if(!member)return '';
- return member.confirmDate || member.join || '';
+ return member.confirmDate || '';
 }
 
 function inclusiveMonthsForYear(startDate,endDate,year){
@@ -3663,7 +3837,7 @@ function inclusiveMonthsForYear(startDate,endDate,year){
  return Math.max(0,endMonth-startMonth+1);
 }
 
-function fullYearALEntitlement(member,year){
+function fullYearALEntitlement(member,year=currentPlannerYear()){
  if(!member)return 0;
  const startDate=alEffectiveStartDate(member);
  if(!startDate)return Math.min(maxALCap(member),alBaseEntitlement(member));
@@ -3673,11 +3847,10 @@ function fullYearALEntitlement(member,year){
  return Math.min(maxALCap(member),alBaseEntitlement(member)+yearlyIncrease);
 }
 
-function autoALEntitlement(member){
+function autoALEntitlement(member,year=currentPlannerYear()){
  if(!member)return 0;
- const today=new Date();
- const year=today.getFullYear();
  const startDate=alEffectiveStartDate(member);
+ if(!startDate)return 0;
  const terminationDate=member.terminationDate||'';
  const full=fullYearALEntitlement(member,year);
  const months=inclusiveMonthsForYear(startDate,terminationDate,year);
@@ -3685,8 +3858,8 @@ function autoALEntitlement(member){
  return Math.min(full,prorated);
 }
 
-function alEntitlement(member){
- return autoALEntitlement(member);
+function alEntitlement(member,year=currentPlannerYear()){
+ return autoALEntitlement(member,year);
 }
 
 function mcEntitlement(member){
@@ -3694,15 +3867,15 @@ function mcEntitlement(member){
  return (member.location||'Local')==='Remote'?10:14;
 }
 
-function phInLieuBonus(member){
+function phInLieuBonus(member,year=currentPlannerYear()){
  if(!member || member.week!=='5') return 0;
  const today=new Date();
- today.setHours(23,59,59,999);
+  today.setHours(23,59,59,999);
 
  return allPublicHolidays().filter(p=>{
   const d=fmt(p[0]);
   const day=d.getDay();
-  return d<=today && day===6;
+  return d.getFullYear()===year && d<=today && day===6;
  }).length;
 }
 
@@ -3875,8 +4048,8 @@ function attendanceRecordUnitsInRange(r,member,startDate,endDate){
  if(['AM','PM','CCLAM','CCLPM'].includes(r.type))return 0.5;
  return dates.length;
 }
-function attendanceAllocatedForCategory(member,cat){
- if(cat==='annual')return alEntitlement(member)+phInLieuBonus(member);
+function attendanceAllocatedForCategory(member,cat,year=currentPlannerYear()){
+ if(cat==='annual')return alEntitlement(member,year)+phInLieuBonus(member,year)+alAdjustmentTotal(member.initial,year);
  if(cat==='urgentAL')return 0;
  if(cat==='unpaidAL')return 0;
  if(cat==='childcare')return childcareEntitlement(member);
@@ -3900,7 +4073,7 @@ function attendanceSummaryRows(year){
  const rows=[];
  d.members.forEach(m=>{
   cats.forEach(cat=>{
-   const allocatedYear=attendanceAllocatedForCategory(m,cat.key);
+   const allocatedYear=attendanceAllocatedForCategory(m,cat.key,year);
    const row={initial:m.initial,name:m.name,category:cat.label,entitlement:allocatedYear,allocated:[0,0,0,0],taken:[0,0,0,0],totalTaken:0,balance:0};
    for(let q=1;q<=4;q++){
     const qr=quarterDateRange(year,q);
@@ -3986,7 +4159,7 @@ function renderMembers(){
  <td>${m.week}D</td>
  <td>${m.packer}</td>
  <td>${alEntitlement(m).toFixed(1).replace('.0','')}${(m.alOverride!==undefined&&m.alOverride!==null&&m.alOverride!=='')?' (Base)':' (Auto)'}</td>
- <td>${(alEntitlement(m)+phInLieuBonus(m)-used(m.initial,'AL')).toFixed(1).replace('.0','')}</td>
+ <td>${(alEntitlement(m)+phInLieuBonus(m)-used(m.initial,'AL')+alAdjustmentTotal(m.initial)).toFixed(1).replace('.0','')}</td>
  </tr>`});
  const finalHtml=html+'</table>';
  if($('memberTable')) $('memberTable').innerHTML=finalHtml;
@@ -4459,6 +4632,7 @@ function cancelRecord(id){
   : 'Cancel this leave record?';
  if(!confirm(msg))return;
 
+ if(r.status==='Approved')captureBuddyLocksForFrozenWindow_(d,'Leave cancelled');
  r.status='Cancelled';
  r.cancelledOn=iso(new Date());
  r.notes=(r.notes?r.notes+' ':'')+'Cancelled.';
