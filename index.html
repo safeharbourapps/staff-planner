@@ -221,7 +221,7 @@ body.isAdmin span.adminOnly.hide{
   <div><div class="logo">Staff Planner</div><div class="muted" style="color:#d8c8ad">Leave · WFH · Birthday Off · Singapore PH</div></div>
   <div class="row" style="flex:0 0 auto">
     <span id="who" class="pill">Not logged in</span>
-    <span id="appVersionLabel" class="pill" style="font-size:11px;color:#d8c8ad" title="Staff Planner version">v2026.06.29.08 | Updated 29 Jun 2026 | Unconfirmed MC Display Label</span>
+    <span id="appVersionLabel" class="pill" style="font-size:11px;color:#d8c8ad" title="Staff Planner version">v2026.06.29.11 | Updated 29 Jun 2026 | Zero MC Claim Acknowledge</span>
     <button id="logoutBtn" class="secondary small hide" onclick="logout()">Logout</button>
   </div>
 
@@ -1801,9 +1801,11 @@ function submitRequest(){
   }
  }
 
- if(type==='UPL'){
+ if(type==='UPL' && !isAdministrator()){
   needApproval=true;
   notes.push('Unpaid Leave requires Administrator approval.');
+ }else if(type==='UPL'){
+  notes.push('Unpaid Leave entered by Administrator.');
  }
 
  // Same rule for CSO and Admin: only 1 same-type staff on leave per day.
@@ -3888,6 +3890,16 @@ function mcBalance(member,year=currentPlannerYear()){
  return mcEntitlement(member)-used(member.initial,'MC',year);
 }
 
+function compassionateEntitlement(member){
+ if(!member)return 0;
+ return member.confirmDate ? 2 : 0;
+}
+
+function compassionateBalance(member,year=currentPlannerYear()){
+ if(!member)return 0;
+ return compassionateEntitlement(member)-used(member.initial,'CL',year);
+}
+
 function phInLieuBonus(member,year=currentPlannerYear()){
  if(!member || member.week!=='5') return 0;
  const today=new Date();
@@ -3998,7 +4010,7 @@ function renderKPI(){
    $('adminStaffBalances').innerHTML=activeMembers(d.members).map(m=>{
     const al=alBalance(m).toFixed(1).replace('.0','');
     const mc=mcBalance(m).toFixed(1).replace('.0','');
-    const cl=(2-used(m.initial,'CL')).toFixed(1).replace('.0','');
+    const cl=compassionateBalance(m).toFixed(1).replace('.0','');
     const pend=d.records.filter(r=>r.initial===m.initial&&r.status==='Pending').length;
     const ccl=childcareBalance(m).toFixed(1).replace('.0','');
     return `<div class="staffBalanceCard">
@@ -4028,7 +4040,7 @@ function renderKPI(){
  if($('kpiStaffName')) $('kpiStaffName').innerHTML=`Balance shown for: <b>${m.name} (${m.initial})</b>`;
  $('kAL').textContent=alBalance(m).toFixed(1).replace('.0','');
  $('kMC').textContent=mcBalance(m).toFixed(1).replace('.0','');
- $('kCL').textContent=(2-used(m.initial,'CL')).toFixed(1).replace('.0','');
+ $('kCL').textContent=compassionateBalance(m).toFixed(1).replace('.0','');
  $('kPend').textContent=d.records.filter(r=>r.initial===m.initial&&r.status==='Pending').length;
  if($('kCCL')) $('kCCL').textContent=childcareBalance(m).toFixed(1).replace('.0','');
  if($('kUrgent')) $('kUrgent').textContent=urgentLeaveTaken(m.initial).toFixed(1).replace('.0','');
@@ -4077,7 +4089,7 @@ function attendanceAllocatedForCategory(member,cat,year=currentPlannerYear()){
  if(cat==='childcare')return childcareEntitlement(member);
  if(cat==='medical')return mcEntitlement(member);
  if(cat==='unpaidMedical')return 0;
- if(cat==='compassionate')return 2;
+ if(cat==='compassionate')return compassionateEntitlement(member);
  return 0;
 }
 function attendanceSummaryRows(year){
@@ -4477,6 +4489,12 @@ function payClaim(category,id){
   if(!c)return alert('MC claim not found.');
   if(c.status==='Paid')return alert('This claim is already marked as paid.');
   c.status='Paid'; c.paidOn=iso(new Date());
+ }else if(category==='mcAck'){
+  const c=(d.mcClaims||[]).find(x=>x.id===id);
+  if(!c)return alert('MC claim not found.');
+  if(c.status==='Acknowledged')return alert('This zero-dollar MC claim is already acknowledged.');
+  if(Number(c.amount||0)>0)return alert('Only zero-dollar MC claims can be acknowledged. Please use Pay for claims with amount.');
+  c.status='Acknowledged'; c.acknowledgedOn=iso(new Date());
  }else if(category==='general'){
   const c=(d.generalClaims||[]).find(x=>x.id===id);
   if(!c)return alert('Claim not found.');
@@ -4531,8 +4549,19 @@ function renderMCClaims(){
   const amount=Number(c.amount)||0;
   const status=c.status||'Unpaid';
   const leaveNote=c.leaveStatus?`<br><span class="smallText">${c.leaveStatus}</span>`:'';
-  if(status==='Paid')totalPaid+=amount; else totalUnpaid+=amount;
-  rows.push({status,id:c.id,html:`<tr><td>${status==='Paid'?'<span class="muted">Paid</span>':`<button class="ok small" onclick="payClaim('mc',${c.id})">Pay</button>`}</td><td>${c.from} to ${c.to}</td><td>MC Consultation Fee${leaveNote}</td><td>${staff?staff.name:c.initial} (${c.initial})</td><td>$${amount.toFixed(2)}</td><td>${mcFileLink(c)}</td><td>${c.remarks||''}</td><td><span class="status ${status==='Paid'?'mcPaid':'mcUnpaid'}">${status}</span>${c.paidOn?`<br><span class="smallText">Paid on ${c.paidOn}</span>`:''}</td></tr>`});
+  if(status==='Paid')totalPaid+=amount; else if(status!=='Acknowledged')totalUnpaid+=amount;
+  const isZeroMC=amount<=0;
+  const action=status==='Paid'
+    ? '<span class="muted">Paid</span>'
+    : status==='Acknowledged'
+      ? '<span class="muted">Acknowledged</span>'
+      : isZeroMC
+        ? `<button class="ok small" onclick="payClaim('mcAck',${c.id})">Acknowledge</button>`
+        : `<button class="ok small" onclick="payClaim('mc',${c.id})">Pay</button>`;
+  const statusClass=(status==='Paid'||status==='Acknowledged')?'mcPaid':'mcUnpaid';
+  const processedOn=c.paidOn||c.acknowledgedOn||'';
+  const processedText=processedOn?`<br><span class="smallText">${status==='Acknowledged'?'Acknowledged':'Paid'} on ${processedOn}</span>`:'';
+  rows.push({status,id:c.id,html:`<tr><td>${action}</td><td>${c.from} to ${c.to}</td><td>MC Consultation Fee${leaveNote}</td><td>${staff?staff.name:c.initial} (${c.initial})</td><td>$${amount.toFixed(2)}</td><td>${mcFileLink(c)}</td><td>${c.remarks||''}</td><td><span class="status ${statusClass}">${status}</span>${processedText}</td></tr>`});
  });
 
  (d.generalClaims||[]).filter(c=>{
