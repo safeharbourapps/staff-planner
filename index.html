@@ -221,7 +221,7 @@ body.isAdmin span.adminOnly.hide{
   <div><div class="logo">Staff Planner</div><div class="muted" style="color:#d8c8ad">Leave · WFH · Birthday Off · Singapore PH</div></div>
   <div class="row" style="flex:0 0 auto">
     <span id="who" class="pill">Not logged in</span>
-    <span id="appVersionLabel" class="pill" style="font-size:11px;color:#d8c8ad" title="Staff Planner version">v2026.06.29.05 | Updated 29 Jun 2026 | Split Legacy Cross-Year Usage</span>
+    <span id="appVersionLabel" class="pill" style="font-size:11px;color:#d8c8ad" title="Staff Planner version">v2026.06.29.08 | Updated 29 Jun 2026 | Unconfirmed MC Display Label</span>
     <button id="logoutBtn" class="secondary small hide" onclick="logout()">Logout</button>
   </div>
 
@@ -2083,8 +2083,10 @@ async function submitMC(){
  const mcAttachment=await readClaimReceiptFile(file);
  const fileName=mcAttachment.receiptName||'No file';
  const remarks=$('mcRemarks').value;
- const consultFee=Number(($('mcConsultFee')&&$('mcConsultFee').value)||0)||0;
+ let consultFee=Number(($('mcConsultFee')&&$('mcConsultFee').value)||0)||0;
  const latestMember=latest.members.find(m=>m.initial===initial)||member;
+ const unconfirmedStaff=!latestMember.confirmDate;
+ if(unconfirmedStaff) consultFee=0;
  const mcBal=Math.max(0,mcEntitlement(latestMember)-used(initial,'MC',mcYear));
  const alBal=Math.max(0,alEntitlement(latestMember,mcYear)+phInLieuBonus(latestMember,mcYear)-used(initial,'AL',mcYear)+alAdjustmentTotal(initial,mcYear));
  let remainingMC=mcBal;
@@ -2107,6 +2109,7 @@ async function submitMC(){
  const noteParts=[];
  if(buckets.AL.length) noteParts.push((buckets.AL.length*mcUnitPerDate)+' day(s) exceeded MC entitlement and deducted as Annual Leave.');
  if(buckets.UPL.length) noteParts.push((buckets.UPL.length*mcUnitPerDate)+' day(s) exceeded MC/AL entitlement and captured as Unpaid Leave.');
+ if(unconfirmedStaff) noteParts.push('Unconfirmed staff: MC absence is salary deduction and consultation fee is not payable.');
  const autoNote=noteParts.join(' ');
 
  const createdRecordIds=[];
@@ -2618,13 +2621,14 @@ function canShowInitialOnCalendar(initial){
 
 
 function calendarLeaveLabel(r){
- if(!r)return 'AL';
+  if(!r)return 'AL';
 
  if(r.type==='EL')return 'Urgent AL';
  if(r.type==='CCL')return 'CCL';
  if(r.type==='CCLAM')return 'CCL AM';
  if(r.type==='CCLPM')return 'CCL PM';
- if(r.type==='UPL')return 'Unpaid Leave';
+  if(r.type==='UPL' && isUnconfirmedMCDeduction_(r))return 'Unpaid MC';
+  if(r.type==='UPL')return 'Unpaid Leave';
  if(r.type==='MCWFH')return 'MC-WFH (No Covering)';
  if(r.type==='MC' && r.mcSession==='AM')return 'MC AM';
  if(r.type==='MC' && r.mcSession==='PM')return 'MC PM';
@@ -2640,7 +2644,12 @@ function calendarLeaveLabel(r){
   return r.type;
  }
 
- return r.type||'AL';
+  return r.type||'AL';
+}
+
+function isUnconfirmedMCDeduction_(r){
+ const text=((r&&r.reason)||'')+' '+((r&&r.notes)||'');
+ return r && r.type==='UPL' && /unconfirmed staff|unpaid mc|mc absence|salary deduction/i.test(text);
 }
 
 
@@ -3864,7 +3873,19 @@ function alEntitlement(member,year=currentPlannerYear()){
 
 function mcEntitlement(member){
  if(!member)return 14;
+ if(!member.confirmDate)return 0;
  return (member.location||'Local')==='Remote'?10:14;
+}
+
+function alBalance(member,year=currentPlannerYear()){
+ if(!member)return 0;
+ const bal=alEntitlement(member,year)+phInLieuBonus(member,year)-used(member.initial,'AL',year)+alAdjustmentTotal(member.initial,year);
+ return member.confirmDate ? bal : Math.max(0,bal);
+}
+
+function mcBalance(member,year=currentPlannerYear()){
+ if(!member)return 0;
+ return mcEntitlement(member)-used(member.initial,'MC',year);
 }
 
 function phInLieuBonus(member,year=currentPlannerYear()){
@@ -3975,8 +3996,8 @@ function renderKPI(){
   if($('adminStaffBalances')){
    $('adminStaffBalances').classList.remove('hide');
    $('adminStaffBalances').innerHTML=activeMembers(d.members).map(m=>{
-    const al=(alEntitlement(m)+phInLieuBonus(m)-used(m.initial,'AL')+alAdjustmentTotal(m.initial)).toFixed(1).replace('.0','');
-    const mc=(mcEntitlement(m)-used(m.initial,'MC')).toFixed(1).replace('.0','');
+    const al=alBalance(m).toFixed(1).replace('.0','');
+    const mc=mcBalance(m).toFixed(1).replace('.0','');
     const cl=(2-used(m.initial,'CL')).toFixed(1).replace('.0','');
     const pend=d.records.filter(r=>r.initial===m.initial&&r.status==='Pending').length;
     const ccl=childcareBalance(m).toFixed(1).replace('.0','');
@@ -4005,8 +4026,8 @@ function renderKPI(){
  const m=d.members.find(x=>x.initial===currentUser.initial)||d.members[0]; if(!m)return;
  renderLeaveReminder(m);
  if($('kpiStaffName')) $('kpiStaffName').innerHTML=`Balance shown for: <b>${m.name} (${m.initial})</b>`;
- $('kAL').textContent=(alEntitlement(m)+phInLieuBonus(m)-used(m.initial,'AL')+alAdjustmentTotal(m.initial)).toFixed(1).replace('.0','');
- $('kMC').textContent=(mcEntitlement(m)-used(m.initial,'MC')).toFixed(1).replace('.0','');
+ $('kAL').textContent=alBalance(m).toFixed(1).replace('.0','');
+ $('kMC').textContent=mcBalance(m).toFixed(1).replace('.0','');
  $('kCL').textContent=(2-used(m.initial,'CL')).toFixed(1).replace('.0','');
  $('kPend').textContent=d.records.filter(r=>r.initial===m.initial&&r.status==='Pending').length;
  if($('kCCL')) $('kCCL').textContent=childcareBalance(m).toFixed(1).replace('.0','');
@@ -4035,6 +4056,7 @@ function attendanceCategoryForRecord(r){
  if(!r)return '';
  if(isUrgentAnnualLeaveRecord(r))return 'urgentAL';
  if(['AL','AM','PM'].includes(r.type))return 'annual';
+ if(r.type==='UPL' && isUnconfirmedMCDeduction_(r))return 'unpaidMedical';
  if(r.type==='UPL')return 'unpaidAL';
  if(['CCL','CCLAM','CCLPM'].includes(r.type))return 'childcare';
  if(r.type==='MC')return 'medical';
@@ -4159,7 +4181,7 @@ function renderMembers(){
  <td>${m.week}D</td>
  <td>${m.packer}</td>
  <td>${alEntitlement(m).toFixed(1).replace('.0','')}${(m.alOverride!==undefined&&m.alOverride!==null&&m.alOverride!=='')?' (Base)':' (Auto)'}</td>
- <td>${(alEntitlement(m)+phInLieuBonus(m)-used(m.initial,'AL')+alAdjustmentTotal(m.initial)).toFixed(1).replace('.0','')}</td>
+ <td>${alBalance(m).toFixed(1).replace('.0','')}</td>
  </tr>`});
  const finalHtml=html+'</table>';
  if($('memberTable')) $('memberTable').innerHTML=finalHtml;
@@ -4533,7 +4555,8 @@ function renderMCClaims(){
   const staff=d.members.find(m=>m.initial===r.initial);
   const deducted=getUnpaidLeaveDeductionStatus(d,r);
   const status=deducted?'Deducted':'Pending Deduction';
-  rows.push({status:deducted?'Paid':'Unpaid',id:r.id,html:`<tr><td>${deducted?'<span class="muted">Deducted</span>':`<button class="danger small" onclick="payClaim('unpaidLeave',${r.id})">Deduct</button>`}</td><td>${r.from} to ${r.to}</td><td>Unpaid Leave Wage Deduction</td><td>${staff?staff.name:r.initial} (${r.initial})</td><td>${Number(r.units||0).toFixed(1).replace('.0','')} day(s)</td><td>-</td><td>${r.reason||r.notes||''}</td><td><span class="status ${deducted?'mcPaid':'mcUnpaid'}">${status}</span>${deducted?.deductedOn?`<br><span class="smallText">Deducted on ${deducted.deductedOn}</span>`:''}</td></tr>`});
+  const deductionLabel=isUnconfirmedMCDeduction_(r)?'Unpaid MC Wage Deduction':'Unpaid Leave Wage Deduction';
+  rows.push({status:deducted?'Paid':'Unpaid',id:r.id,html:`<tr><td>${deducted?'<span class="muted">Deducted</span>':`<button class="danger small" onclick="payClaim('unpaidLeave',${r.id})">Deduct</button>`}</td><td>${r.from} to ${r.to}</td><td>${deductionLabel}</td><td>${staff?staff.name:r.initial} (${r.initial})</td><td>${Number(r.units||0).toFixed(1).replace('.0','')} day(s)</td><td>-</td><td>${r.reason||r.notes||''}</td><td><span class="status ${deducted?'mcPaid':'mcUnpaid'}">${status}</span>${deducted?.deductedOn?`<br><span class="smallText">Deducted on ${deducted.deductedOn}</span>`:''}</td></tr>`});
  });
 
  if(month){
