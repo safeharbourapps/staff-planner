@@ -221,7 +221,7 @@ body.isAdmin span.adminOnly.hide{
   <div><div class="logo">Staff Planner</div><div class="muted" style="color:#d8c8ad">Leave · WFH · Birthday Off · Singapore PH</div></div>
   <div class="row" style="flex:0 0 auto">
     <span id="who" class="pill">Not logged in</span>
-    <span id="appVersionLabel" class="pill" style="font-size:11px;color:#d8c8ad" title="Staff Planner version">v2026.07.03.06 | Updated 03 Jul 2026 | Special Event Calendar Info</span>
+    <span id="appVersionLabel" class="pill" style="font-size:11px;color:#d8c8ad" title="Staff Planner version">v2026.07.03.07 | Updated 03 Jul 2026 | Hide Zero Flex WFH</span>
     <button id="logoutBtn" class="secondary small hide" onclick="logout()">Logout</button>
   </div>
 
@@ -420,7 +420,7 @@ body.isAdmin span.adminOnly.hide{
 
       <section id="panel-wfhchange" class="hide">
         <h3>WFH Change Request</h3>
-        <label>Staff</label><select id="wfhStaff"></select>
+        <label>Staff</label><select id="wfhStaff" onchange="updateWFHRequestTypeOptions()"></select>
         <label>Request Type</label>
         <select id="wfhRequestType" onchange="toggleWFHRequestType()">
           <option value="swap">Swap WFH with same type staff</option>
@@ -645,6 +645,13 @@ body.isAdmin span.adminOnly.hide{
 <script>
 /*
 CHANGE LOG
+v2026.07.03.07 | Updated 03 Jul 2026 | Hide Zero Flex WFH
+- Features changed: Flex WFH auto approval option is hidden when the selected/logged-in staff has 0 Flex WFH weekly allowance.
+- Bugs fixed: staff without Flex WFH allowance no longer see an option they cannot use.
+- Functions changed: renderAll, updateWFHRequestTypeOptions, selectedWFHMember, WFH staff selector change handler.
+- Unchanged: Flex WFH submission safety check, allowance calculation, WFH swap/special/internal swap, Special Event, On Course, leave/MC/HL rules, Google Sheet save flow.
+- Testing: embedded JavaScript syntax check passes.
+
 v2026.07.03.06 | Updated 03 Jul 2026 | Special Event Calendar Info
 - Features added: Administrator-only Special Event calendar info items with add/remove list under Block Out Dates.
 - Features changed: Special Events display on the calendar as Event tags and do not affect working-day calculation, leave approval, blockout rules, or balances.
@@ -1180,7 +1187,7 @@ function renderALAdjustmentList(){
 }
 
 
-function renderAll(){renderSelectors();renderCalendar();renderMembers();renderRecords();renderApprovals();renderMCClaims();renderStaffMCClaimStatus();renderStaffGeneralClaimStatus();renderBlockouts();renderSpecialEvents();renderWFHChanges();renderWorkTimeChanges();renderCoverSwapRequests();renderBuddySystem();refreshAdminCoverChangeOptions();renderAttendanceSummary();updatePendingTabAlerts();renderKPI();loadSettings();renderPublicHolidayEditor();renderALAdjustmentList();renderWPReminder();updateMCMedicalTypeOptions();updateApplyTypeOptions(); const wfhChangeTab=document.querySelector('.tab[data-tab="wfhchange"]'); if(wfhChangeTab)wfhChangeTab.style.display=(currentUser&&isRemoteStaffUser())?'none':''; if(currentUser&&$('memberCard')){$('memberCard').style.display='none';$('adminTables').style.display='grid';} setTimeout(checkPlannerSoundNotifications,80);}
+function renderAll(){renderSelectors();renderCalendar();renderMembers();renderRecords();renderApprovals();renderMCClaims();renderStaffMCClaimStatus();renderStaffGeneralClaimStatus();renderBlockouts();renderSpecialEvents();renderWFHChanges();renderWorkTimeChanges();renderCoverSwapRequests();renderBuddySystem();refreshAdminCoverChangeOptions();renderAttendanceSummary();updatePendingTabAlerts();renderKPI();loadSettings();renderPublicHolidayEditor();renderALAdjustmentList();renderWPReminder();updateMCMedicalTypeOptions();updateApplyTypeOptions();updateWFHRequestTypeOptions(); const wfhChangeTab=document.querySelector('.tab[data-tab="wfhchange"]'); if(wfhChangeTab)wfhChangeTab.style.display=(currentUser&&isRemoteStaffUser())?'none':''; if(currentUser&&$('memberCard')){$('memberCard').style.display='none';$('adminTables').style.display='grid';} setTimeout(checkPlannerSoundNotifications,80);}
 function renderSelectors(){
  const d=data();
 
@@ -1488,9 +1495,34 @@ function isWFHRemoved(date, initial){
 }
 
 function toggleWFHRequestType(){
- const type=$('wfhRequestType')?$('wfhRequestType').value:'swap';
- if($('wfhOriginalWrap')) $('wfhOriginalWrap').style.display=(type==='special'||type==='flex')?'none':'block';
- if($('wfhNewDateLabel')) $('wfhNewDateLabel').textContent=type==='special'?'Requested WFH Date':(type==='flex'?'Flex WFH Date':(type==='internalSwap'?'Intended WFH Date':'Requested New WFH Date'));
+  const type=$('wfhRequestType')?$('wfhRequestType').value:'swap';
+  if($('wfhOriginalWrap')) $('wfhOriginalWrap').style.display=(type==='special'||type==='flex')?'none':'block';
+  if($('wfhNewDateLabel')) $('wfhNewDateLabel').textContent=type==='special'?'Requested WFH Date':(type==='flex'?'Flex WFH Date':(type==='internalSwap'?'Intended WFH Date':'Requested New WFH Date'));
+}
+
+function selectedWFHMember(){
+ const d=data();
+ let initial=$('wfhStaff')&&$('wfhStaff').value;
+ if(!isAdministrator() && currentUser)initial=currentUser.initial;
+ return (d.members||[]).find(m=>m.initial===initial)||null;
+}
+
+function updateWFHRequestTypeOptions(){
+ const select=$('wfhRequestType');
+ if(!select)return;
+ const member=selectedWFHMember();
+ const allowFlex=flexWFHAllowance(member)>0;
+ const existing=Array.from(select.options).find(o=>o.value==='flex');
+ if(allowFlex && !existing){
+  const specialOption=Array.from(select.options).find(o=>o.value==='special');
+  const option=new Option('Flex WFH auto approval','flex');
+  if(specialOption)select.add(option,specialOption); else select.add(option);
+ }
+ if(!allowFlex && existing){
+  if(select.value==='flex')select.value='swap';
+  existing.remove();
+ }
+ toggleWFHRequestType();
 }
 
 function flexWFHWeekBounds(date){
