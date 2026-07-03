@@ -221,7 +221,7 @@ body.isAdmin span.adminOnly.hide{
   <div><div class="logo">Staff Planner</div><div class="muted" style="color:#d8c8ad">Leave · WFH · Birthday Off · Singapore PH</div></div>
   <div class="row" style="flex:0 0 auto">
     <span id="who" class="pill">Not logged in</span>
-    <span id="appVersionLabel" class="pill" style="font-size:11px;color:#d8c8ad" title="Staff Planner version">v2026.07.03.07 | Updated 03 Jul 2026 | Hide Zero Flex WFH</span>
+    <span id="appVersionLabel" class="pill" style="font-size:11px;color:#d8c8ad" title="Staff Planner version">v2026.07.03.09 | Updated 03 Jul 2026 | Flex WFH Cancel + Replan</span>
     <button id="logoutBtn" class="secondary small hide" onclick="logout()">Logout</button>
   </div>
 
@@ -286,10 +286,10 @@ body.isAdmin span.adminOnly.hide{
       <section id="panel-apply" class="hide">
         <h3>Apply Leave</h3>
         <label>Staff</label><select id="applyStaff"></select>
-        <label>Type</label><select id="applyType">
+        <label>Type</label><select id="applyType" onchange="autoFillToDate()">
           <option value="AL">Annual Leave - Full Day</option><option value="AM">Morning Leave</option><option value="PM">Afternoon Leave</option>
-          <option value="EL">Emergency Leave</option><option value="CL">Compassionate Leave</option><option value="CCL">Childcare Leave</option><option value="CCLAM">Childcare AM Leave</option><option value="CCLPM">Childcare PM Leave</option><option value="UPL">Unpaid Leave</option>
-          <option value="OCP">On Course - Paid</option><option value="OCU">On Course - Unpaid</option>
+          <option value="EL">Emergency Leave</option><option value="CL">Compassionate Leave</option><option value="CCL">Childcare Leave</option><option value="CCLAM">Childcare AM Leave</option><option value="CCLPM">Childcare PM Leave</option><option value="UPL">Unpaid Leave</option><option value="UPLAM">Unpaid Leave AM</option><option value="UPLPM">Unpaid Leave PM</option>
+          <option value="OCP">On Course - Paid</option><option value="OCU">On Course - Unpaid</option><option value="OCPAM">On Course AM - Paid</option><option value="OCUAM">On Course AM - Unpaid</option><option value="OCPPM">On Course PM - Paid</option><option value="OCUPM">On Course PM - Unpaid</option>
         </select>
         <div class="row dateRow"><div><label>From</label><input id="fromDate" type="date" onchange="autoFillToDate()"></div><div><label>To</label><input id="toDate" type="date" onchange="autoFillToDate()"></div></div>
         <label style="margin-top:10px">Quick Duration</label>
@@ -425,6 +425,7 @@ body.isAdmin span.adminOnly.hide{
         <select id="wfhRequestType" onchange="toggleWFHRequestType()">
           <option value="swap">Swap WFH with same type staff</option>
           <option value="flex">Flex WFH auto approval</option>
+          <option value="flexReplan">Replan fixed WFH auto approval</option>
           <option value="special">Special approval WFH without swap</option>
           <option value="internalSwap">Swap with same type staff (Internally)</option>
         </select>
@@ -645,6 +646,22 @@ body.isAdmin span.adminOnly.hide{
 <script>
 /*
 CHANGE LOG
+v2026.07.03.09 | Updated 03 Jul 2026 | Flex WFH Cancel + Replan
+- Features added: Flex-eligible staff can cancel future Flex WFH records and reapply; Flex-eligible staff can replan one fixed WFH day to another working day without approval.
+- Features changed: WFH request dropdown shows Flex WFH and fixed-WFH replan only when selected/logged-in staff has Flex WFH allowance above 0.
+- Bugs fixed: approved future Flex WFH now has staff-accessible cancellation instead of Administrator-only cancellation.
+- Functions changed: updateWFHRequestTypeOptions, toggleWFHRequestType, submitWFHChange, cancelWFHChange, renderWFHChanges, flexWFH request display helpers.
+- Unchanged: Flex WFH weekly allowance count for additional WFH days, Admin WFH override/cancel tools, WFH swap approvals, Special WFH approvals, leave/MC/HL/On Course rules, Google Sheet save flow.
+- Testing: embedded JavaScript syntax check passes.
+
+v2026.07.03.08 | Updated 03 Jul 2026 | Half-Day Unpaid + On Course
+- Features added: Unpaid Leave AM/PM for all staff; Administrator-only On Course AM/PM Paid and Unpaid.
+- Features changed: half-day unpaid leave and half-day unpaid On Course deduct 0.5 day in Claims Payment after approval.
+- Bugs fixed: no need to use full-day unpaid leave for half-day unpaid absence.
+- Functions changed: leaveUnits, isOnCourseType, updateApplyTypeOptions, submitRequest, calendarLeaveLabel, isLeaveTypeForBuddy, attendanceCategoryForRecord, attendanceRecordUnitsInRange, renderClaimsPayment, payClaim.
+- Unchanged: Flex WFH, Special Event, full-day On Course, full-day Unpaid Leave, AL/MC/HL rules, Google Sheet save flow.
+- Testing: embedded JavaScript syntax check passes.
+
 v2026.07.03.07 | Updated 03 Jul 2026 | Hide Zero Flex WFH
 - Features changed: Flex WFH auto approval option is hidden when the selected/logged-in staff has 0 Flex WFH weekly allowance.
 - Bugs fixed: staff without Flex WFH allowance no longer see an option they cannot use.
@@ -1271,21 +1288,41 @@ function activePlannerRecords(records){
 }
 function workingDays(a,b,member){return eachDate(a,b).filter(x=>isWorkingDay(x,member)).length}
 function leaveUnits(type,a,b,member){
- if(type==='AM'||type==='PM'||type==='CCLAM'||type==='CCLPM') return 0.5;
+ if(isHalfDayLeaveType(type)) return 0.5;
  return workingDays(a,b,member);
 }
 
+function isHalfDayLeaveType(type){
+ return ['AM','PM','CCLAM','CCLPM','UPLAM','UPLPM','OCPAM','OCUAM','OCPPM','OCUPM'].includes(type);
+}
+
 function isOnCourseType(type){
- return ['OCP','OCU'].includes(type);
+ return ['OCP','OCU','OCPAM','OCUAM','OCPPM','OCUPM'].includes(type);
+}
+
+function isUnpaidLeaveType(type){
+ return ['UPL','UPLAM','UPLPM'].includes(type);
+}
+
+function isUnpaidDeductionType(type){
+ return ['UPL','UPLAM','UPLPM','OCU','OCUAM','OCUPM'].includes(type);
+}
+
+function isUnpaidOnCourseType(type){
+ return ['OCU','OCUAM','OCUPM'].includes(type);
 }
 
 function updateApplyTypeOptions(){
  const select=$('applyType');
  if(!select)return;
- const courseOptions=[
-  {value:'OCP',label:'On Course - Paid'},
-  {value:'OCU',label:'On Course - Unpaid'}
- ];
+  const courseOptions=[
+   {value:'OCP',label:'On Course - Paid'},
+  {value:'OCU',label:'On Course - Unpaid'},
+  {value:'OCPAM',label:'On Course AM - Paid'},
+  {value:'OCUAM',label:'On Course AM - Unpaid'},
+  {value:'OCPPM',label:'On Course PM - Paid'},
+  {value:'OCUPM',label:'On Course PM - Unpaid'}
+  ];
  courseOptions.forEach(opt=>{
   const existing=Array.from(select.options).find(o=>o.value===opt.value);
   if(isAdministrator()){
@@ -1497,7 +1534,7 @@ function isWFHRemoved(date, initial){
 function toggleWFHRequestType(){
   const type=$('wfhRequestType')?$('wfhRequestType').value:'swap';
   if($('wfhOriginalWrap')) $('wfhOriginalWrap').style.display=(type==='special'||type==='flex')?'none':'block';
-  if($('wfhNewDateLabel')) $('wfhNewDateLabel').textContent=type==='special'?'Requested WFH Date':(type==='flex'?'Flex WFH Date':(type==='internalSwap'?'Intended WFH Date':'Requested New WFH Date'));
+  if($('wfhNewDateLabel')) $('wfhNewDateLabel').textContent=type==='special'?'Requested WFH Date':(type==='flex'?'Flex WFH Date':(type==='flexReplan'?'Replacement WFH Date':(type==='internalSwap'?'Intended WFH Date':'Requested New WFH Date')));
 }
 
 function selectedWFHMember(){
@@ -1512,17 +1549,31 @@ function updateWFHRequestTypeOptions(){
  if(!select)return;
  const member=selectedWFHMember();
  const allowFlex=flexWFHAllowance(member)>0;
- const existing=Array.from(select.options).find(o=>o.value==='flex');
- if(allowFlex && !existing){
-  const specialOption=Array.from(select.options).find(o=>o.value==='special');
-  const option=new Option('Flex WFH auto approval','flex');
-  if(specialOption)select.add(option,specialOption); else select.add(option);
- }
- if(!allowFlex && existing){
-  if(select.value==='flex')select.value='swap';
-  existing.remove();
- }
- toggleWFHRequestType();
+ const flexOptions=[
+  {value:'flex',label:'Flex WFH auto approval'},
+  {value:'flexReplan',label:'Replan fixed WFH auto approval'}
+ ];
+ flexOptions.forEach(opt=>{
+  const existing=Array.from(select.options).find(o=>o.value===opt.value);
+  if(allowFlex && !existing){
+   const specialOption=Array.from(select.options).find(o=>o.value==='special');
+   const option=new Option(opt.label,opt.value);
+   if(specialOption)select.add(option,specialOption); else select.add(option);
+  }
+  if(!allowFlex && existing){
+   if(select.value===opt.value)select.value='swap';
+   existing.remove();
+  }
+ });
+  toggleWFHRequestType();
+}
+
+function wfhRequestDateForCancel(r){
+ return r&&(r.requestType==='flex'||r.requestType==='special')?r.newDate:r&&r.originalDate;
+}
+
+function isFutureOrTodayDate(date){
+ return !!date && date>=iso(new Date());
 }
 
 function flexWFHWeekBounds(date){
@@ -1565,7 +1616,7 @@ function submitWFHChange(){
  if(!initial||!newDate)return alert('Please select staff and requested WFH date.');
 
  const staff=d.members.find(m=>m.initial===initial);
- if(!['special','flex'].includes(requestType) && !isLocalWFHEligible(staff)){
+ if(!['special','flex','flexReplan'].includes(requestType) && !isLocalWFHEligible(staff)){
   return alert('WFH swap request is only for active Local CSO/Admin. Administrator, Remote and Terminated staff are excluded.');
  }
  if(requestType==='flex'){
@@ -1584,6 +1635,31 @@ function submitWFHChange(){
   $('wfhReason').value='';
   renderAll();
   alert('Flex WFH auto-approved. Weekly usage: '+(usedThisWeek+1)+' / '+allowance+'.');
+  return;
+ }
+ if(requestType==='flexReplan'){
+  if(!staff)return alert('Staff record not found.');
+  if(!isLocalWFHEligible(staff))return alert('Fixed WFH replan is only for active Local CSO/Admin staff.');
+  const allowance=flexWFHAllowance(staff);
+  if(allowance<=0)return alert('This staff has no Flex WFH auto-approval allowance. Please update the staff profile first.');
+  if(!originalDate)return alert('Please select the original fixed WFH date to replan.');
+  if(!isFutureOrTodayDate(originalDate))return alert('Past WFH dates cannot be cancelled or replanned.');
+  if(!isWorkingDay(newDate,staff))return alert('Replacement WFH can only be planned on this staff working day.');
+  if(!getCalendarWFHList(originalDate).includes(initial))return alert('This staff is not WFH on the selected original date.');
+  if(getCalendarWFHList(newDate).includes(initial))return alert('This staff is already WFH on the replacement date.');
+  if(!d.wfhRemoved)d.wfhRemoved=[];
+  if(!d.wfhOverrides)d.wfhOverrides=[];
+  d.wfhRemoved=d.wfhRemoved.filter(r=>!(r.date===originalDate && r.initial===initial));
+  d.wfhRemoved.push({id:Date.now(),date:originalDate,initial,reason:reason||'Flex WFH fixed-day replan',status:'Replanned',replannedDate:newDate,replannedOn:iso(new Date())});
+  d.wfhOverrides=d.wfhOverrides.filter(o=>!(o.date===newDate && o.initial===initial));
+  d.wfhOverrides.push({id:Date.now()+1,date:newDate,initial,reason:reason||'Flex WFH fixed-day replan from '+originalDate});
+  d.wfhRequests.push({id:Date.now()+2,initial,requestType:'flexReplan',originalDate,newDate,reason:reason||'Flex WFH fixed-day replan',status:'Approved',approvedBy:'System',approvedOn:iso(new Date())});
+  save(d);
+  if($('wfhOriginalDate')) $('wfhOriginalDate').value='';
+  if($('wfhNewDate')) $('wfhNewDate').value='';
+  $('wfhReason').value='';
+  renderAll();
+  alert('Fixed WFH replanned without approval: '+originalDate+' to '+newDate+'.');
   return;
  }
  if(requestType==='special'){
@@ -1784,7 +1860,6 @@ function deleteWFHOverride(id){
 }
 
 function cancelWFHChange(id){
- if(!isAdministrator())return alert('Only Administrator can cancel approved WFH changes.');
  const d=data();
  const r=(d.wfhRequests||[]).find(x=>x.id===id);
  if(!r)return alert('WFH record not found.');
@@ -1792,16 +1867,36 @@ function cancelWFHChange(id){
  if(r.status!=='Approved'){
   return alert('Only approved WFH changes can be cancelled.');
  }
+ const cancelDate=wfhRequestDateForCancel(r);
+ const ownFutureFlex=currentUser && r.requestType==='flex' && r.initial===currentUser.initial && isFutureOrTodayDate(cancelDate);
+ if(!isAdministrator() && !ownFutureFlex)return alert('Only Administrator can cancel this WFH change.');
+ if(r.requestType==='flex' && !isFutureOrTodayDate(cancelDate))return alert('Past Flex WFH dates cannot be cancelled.');
 
- if(!confirm('Cancel this approved WFH change and revert calendar back to original rotation?'))return;
+ if(!confirm('Cancel this approved WFH change?'))return;
 
  r.status='Cancelled';
  r.cancelledOn=iso(new Date());
- r.notes=(r.notes?r.notes+' ':'')+'Cancelled by Admin.';
+ r.cancelledBy=isAdministrator()?'Admin':currentUser.initial;
+ r.notes=(r.notes?r.notes+' ':'')+(isAdministrator()?'Cancelled by Admin.':'Cancelled by staff.');
 
  save(d);
  renderAll();
- alert('Approved WFH change cancelled. Calendar has reverted to original rotation.');
+ alert('Approved WFH change cancelled.');
+}
+
+function reapplyFlexWFH(id){
+ const d=data();
+ const r=(d.wfhRequests||[]).find(x=>x.id===id);
+ if(!r || r.requestType!=='flex')return alert('Flex WFH record not found.');
+ if(!currentUser || (r.initial!==currentUser.initial && !isAdministrator()))return alert('You can only reapply your own Flex WFH.');
+ if(!isFutureOrTodayDate(r.newDate))return alert('Past Flex WFH dates cannot be reapplied.');
+ showTab('wfhchange');
+ if($('wfhStaff'))$('wfhStaff').value=r.initial;
+ updateWFHRequestTypeOptions();
+ if($('wfhRequestType'))$('wfhRequestType').value='flex';
+ toggleWFHRequestType();
+ if($('wfhNewDate'))$('wfhNewDate').value=r.newDate;
+ if($('wfhReason'))$('wfhReason').value=r.reason||'';
 }
 
 
@@ -1865,16 +1960,20 @@ function renderWFHChanges(){
  const pendingReqs=reqs.filter(r=>r.status==='Pending'||r.status==='Pending Staff Approval');
  const otherReqs=reqs.filter(r=>!(r.status==='Pending'||r.status==='Pending Staff Approval'));
 
- function wfhRequestCard(r){
-   const staff=d.members.find(m=>m.initial===r.initial);
-   const staffName=staff?staff.name:r.initial;
-   const canApprove=isAdministrator()&&r.status==='Pending';
-   const canApproveInternal=currentUser && r.requestType==='internalSwap' && r.status==='Pending Staff Approval' && r.swapWith===currentUser.initial;
-   const canCancelWFH=isAdministrator()&&r.status==='Approved';
-   const requestTitle=r.requestType==='special'?'Special WFH Request':(r.requestType==='flex'?'Flex WFH Auto Approval':(r.requestType==='internalSwap'?'Internal WFH Swap':'WFH Change'));
-   const statusClass=(r.status||'').toLowerCase().replace(/\s+/g,'');
-   return `<div class="item"><b>${staffName} (${r.initial}) - ${requestTitle}</b><div>${r.requestType==='special'?r.newDate:(r.originalDate+' → '+r.newDate)}</div><div class="muted">${r.swapWith?`Swap with: ${r.swapWith}<br>`:''}${r.reason||''}</div><span class="status ${statusClass}">${r.status}</span>${canApprove?`<div class="row" style="margin-top:9px"><button class="ok small" onclick="approveWFHChange(${r.id},'Approved')">Approve</button><button class="danger small" onclick="approveWFHChange(${r.id},'Rejected')">Reject</button></div>`:''}${canApproveInternal?`<div class="row" style="margin-top:9px"><button class="ok small" onclick="approveInternalWFHChange(${r.id},'Approved')">Approve Swap</button><button class="danger small" onclick="approveInternalWFHChange(${r.id},'Rejected')">Reject Swap</button></div>`:''}${canCancelWFH?`<div class="row" style="margin-top:9px"><button class="danger small" onclick="cancelWFHChange(${r.id})">Cancel WFH</button></div>`:''}</div>`;
- }
+  function wfhRequestCard(r){
+    const staff=d.members.find(m=>m.initial===r.initial);
+    const staffName=staff?staff.name:r.initial;
+    const canApprove=isAdministrator()&&r.status==='Pending';
+    const canApproveInternal=currentUser && r.requestType==='internalSwap' && r.status==='Pending Staff Approval' && r.swapWith===currentUser.initial;
+    const cancelDate=wfhRequestDateForCancel(r);
+    const canStaffCancelFlex=currentUser && r.requestType==='flex' && r.initial===currentUser.initial && r.status==='Approved' && isFutureOrTodayDate(cancelDate);
+    const canCancelWFH=(isAdministrator()&&r.status==='Approved')||canStaffCancelFlex;
+    const canReapplyFlex=currentUser && r.requestType==='flex' && r.initial===currentUser.initial && r.status==='Cancelled' && isFutureOrTodayDate(r.newDate);
+    const requestTitle=r.requestType==='special'?'Special WFH Request':(r.requestType==='flex'?'Flex WFH Auto Approval':(r.requestType==='flexReplan'?'Fixed WFH Replan Auto Approval':(r.requestType==='internalSwap'?'Internal WFH Swap':'WFH Change')));
+    const statusClass=(r.status||'').toLowerCase().replace(/\s+/g,'');
+    const dateText=(r.requestType==='special'||r.requestType==='flex')?r.newDate:(r.originalDate+' → '+r.newDate);
+    return `<div class="item"><b>${staffName} (${r.initial}) - ${requestTitle}</b><div>${dateText}</div><div class="muted">${r.swapWith?`Swap with: ${r.swapWith}<br>`:''}${r.reason||''}</div><span class="status ${statusClass}">${r.status}</span>${canApprove?`<div class="row" style="margin-top:9px"><button class="ok small" onclick="approveWFHChange(${r.id},'Approved')">Approve</button><button class="danger small" onclick="approveWFHChange(${r.id},'Rejected')">Reject</button></div>`:''}${canApproveInternal?`<div class="row" style="margin-top:9px"><button class="ok small" onclick="approveInternalWFHChange(${r.id},'Approved')">Approve Swap</button><button class="danger small" onclick="approveInternalWFHChange(${r.id},'Rejected')">Reject Swap</button></div>`:''}${canCancelWFH||canReapplyFlex?`<div class="row" style="margin-top:9px">${canCancelWFH?`<button class="danger small" onclick="cancelWFHChange(${r.id})">Cancel WFH</button>`:''}${canReapplyFlex?`<button class="secondary small" onclick="reapplyFlexWFH(${r.id})">Reapply</button>`:''}</div>`:''}</div>`;
+  }
 
  if(pendingReqs.length){
   html+=pendingReqs.map(wfhRequestCard).join('');
@@ -1935,6 +2034,11 @@ function validateDateRangeFields(fromId,toId,label){
 function autoFillToDate(){
  const from=$('fromDate').value;
  const to=$('toDate').value;
+ const type=$('applyType')&&$('applyType').value;
+ if(from && isHalfDayLeaveType(type)){
+  $('toDate').value=from;
+  return;
+ }
  if(from && (!to || !validPlannerDateValue(to) || fmt(to)<fmt(from))){
   $('toDate').value=from;
  }
@@ -1959,10 +2063,13 @@ function submitRequest(){
   if(isOnCourseType(type) && !isAdministrator())return alert('Only Administrator can apply On Course records.');
   const from=$('fromDate').value, to=$('toDate').value||from; if(!from||!to)return alert('Please choose date.');
  const leaveYear=Number(from.slice(0,4));
- if(from.slice(0,4)!==to.slice(0,4)){
-  return alert('Please submit separate applications for different leave years.');
- }
- const leaveReason=$('reason').value.trim();
+  if(from.slice(0,4)!==to.slice(0,4)){
+   return alert('Please submit separate applications for different leave years.');
+  }
+  if(isHalfDayLeaveType(type) && from!==to){
+   return alert('Half-day applications can only be submitted for one date. Please set To date same as From date.');
+  }
+  const leaveReason=$('reason').value.trim();
  if(!leaveReason)return alert('Please enter reason before submitting leave application.');
   let needApproval=false, notes=[];
 
@@ -1983,7 +2090,7 @@ function submitRequest(){
  }
 
   if(isOnCourseType(type)){
-   notes.push(type==='OCU'?'On Course - Unpaid entered by Administrator.':'On Course - Paid entered by Administrator.');
+   notes.push(isUnpaidOnCourseType(type)?'On Course - Unpaid entered by Administrator.':'On Course - Paid entered by Administrator.');
   }
 
   // Balance check: if no AL / CCL balance, staff cannot apply that leave type. They may apply Unpaid Leave instead.
@@ -2003,10 +2110,10 @@ function submitRequest(){
   }
  }
 
- if(type==='UPL' && !isAdministrator()){
+ if(isUnpaidLeaveType(type) && !isAdministrator()){
   needApproval=true;
   notes.push('Unpaid Leave requires Administrator approval.');
- }else if(type==='UPL'){
+ }else if(isUnpaidLeaveType(type)){
   notes.push('Unpaid Leave entered by Administrator.');
  }
 
@@ -2899,6 +3006,8 @@ function calendarLeaveLabel(r){
   if(isOnCourseType(r.type))return 'On Course';
   if(r.type==='UPL' && isUnconfirmedHospitalisationDeduction_(r))return 'Unpaid Hospitalisation';
   if(r.type==='UPL' && isUnconfirmedMCDeduction_(r))return 'Unpaid MC';
+  if(r.type==='UPLAM')return 'Unpaid Leave AM';
+  if(r.type==='UPLPM')return 'Unpaid Leave PM';
   if(r.type==='UPL')return 'Unpaid Leave';
   if(r.type==='MCWFH')return 'MC-WFH (No Covering)';
   if(r.type==='HL' && r.mcSession==='AM')return 'HL AM';
@@ -2933,7 +3042,7 @@ function isUnconfirmedHospitalisationDeduction_(r){
 
 
 function isLeaveTypeForBuddy(type){
- return ['AL','EL','AM','PM','MC','HL','CL','CCL','CCLAM','CCLPM','UPL','OCP','OCU'].includes(type);
+ return ['AL','EL','AM','PM','MC','HL','CL','CCL','CCLAM','CCLPM','UPL','UPLAM','UPLPM','OCP','OCU','OCPAM','OCUAM','OCPPM','OCUPM'].includes(type);
 }
 
 /* Buddy System performance + accumulated fairness fix:
@@ -4088,7 +4197,7 @@ function recordUnitsInYear_(r,year,member){
  if(recordYear_(r)===year && Number(String(r.to).slice(0,4))===year)return units;
  const dates=eachDate(r.from,r.to).filter(date=>Number(String(date).slice(0,4))===year);
  if(!dates.length)return 0;
- if(['AM','PM','CCLAM','CCLPM'].includes(r.type))return dates.length*0.5;
+ if(isHalfDayLeaveType(r.type))return dates.length*0.5;
  if(['MC','HL'].includes(r.type) && units===0.5)return dates.length*0.5;
  const workingDates=dates.filter(date=>!member || isWorkingDay(date,member));
  return workingDates.length;
@@ -4368,9 +4477,9 @@ function attendanceCategoryForRecord(r){
  if(isUrgentAnnualLeaveRecord(r))return 'urgentAL';
  if(['AL','AM','PM'].includes(r.type))return 'annual';
  if(r.type==='UPL' && isUnconfirmedMCDeduction_(r))return 'unpaidMedical';
- if(r.type==='UPL')return 'unpaidAL';
- if(r.type==='OCU')return 'unpaidAL';
- if(r.type==='OCP')return '';
+ if(['UPL','UPLAM','UPLPM'].includes(r.type))return 'unpaidAL';
+ if(isUnpaidOnCourseType(r.type))return 'unpaidAL';
+ if(['OCP','OCPAM','OCPPM'].includes(r.type))return '';
  if(['CCL','CCLAM','CCLPM'].includes(r.type))return 'childcare';
  if(r.type==='MC')return 'medical';
  if(r.type==='HL')return 'hospitalisationPool';
@@ -4381,7 +4490,7 @@ function attendanceCategoryForRecord(r){
 function attendanceRecordUnitsInRange(r,member,startDate,endDate){
  const dates=eachDate(r.from,r.to).filter(date=>date>=startDate && date<=endDate && isWorkingDay(date,member));
  if(!dates.length)return 0;
- if(['AM','PM','CCLAM','CCLPM'].includes(r.type))return 0.5;
+ if(isHalfDayLeaveType(r.type))return 0.5;
  return dates.length;
 }
 function attendanceAllocatedForCategory(member,cat,year=currentPlannerYear()){
@@ -4820,7 +4929,7 @@ function payClaim(category,id){
   d.servicePaymentsPaid.push({key,initial,years,year,amount:servicePaymentAmount(years),status:'Paid',paidOn:iso(new Date())});
  }else if(category==='unpaidLeave'){
   const r=(d.records||[]).find(x=>x.id===id);
-  if(!r || !['UPL','OCU'].includes(r.type))return alert('Unpaid leave record not found.');
+  if(!r || !isUnpaidDeductionType(r.type))return alert('Unpaid leave record not found.');
   if(!d.unpaidLeaveDeductions)d.unpaidLeaveDeductions=[];
   const key=unpaidLeaveDeductionKey(r);
   if(d.unpaidLeaveDeductions.some(x=>x.key===key))return alert('This unpaid leave has already been marked as deducted.');
@@ -4888,14 +4997,14 @@ function renderMCClaims(){
  });
 
  (d.records||[]).filter(r=>{
-  if(!(['UPL','OCU'].includes(r.type) && r.status==='Approved'))return false;
+  if(!(isUnpaidDeductionType(r.type) && r.status==='Approved'))return false;
   const deducted=getUnpaidLeaveDeductionStatus(d,r);
   return includeClaimForSelectedMonth(claimMonthFromDate(r.from),deducted?'Deducted':'Unpaid');
  }).forEach(r=>{
   const staff=d.members.find(m=>m.initial===r.initial);
   const deducted=getUnpaidLeaveDeductionStatus(d,r);
   const status=deducted?'Deducted':'Pending Deduction';
-   const deductionLabel=r.type==='OCU'?'On Course Unpaid Wage Deduction':(isUnconfirmedHospitalisationDeduction_(r)?'Unpaid Hospitalisation Wage Deduction':(isUnconfirmedMCDeduction_(r)?'Unpaid MC Wage Deduction':'Unpaid Leave Wage Deduction'));
+   const deductionLabel=isUnpaidOnCourseType(r.type)?'On Course Unpaid Wage Deduction':(isUnconfirmedHospitalisationDeduction_(r)?'Unpaid Hospitalisation Wage Deduction':(isUnconfirmedMCDeduction_(r)?'Unpaid MC Wage Deduction':'Unpaid Leave Wage Deduction'));
   rows.push({status:deducted?'Paid':'Unpaid',id:r.id,html:`<tr><td>${deducted?'<span class="muted">Deducted</span>':`<button class="danger small" onclick="payClaim('unpaidLeave',${r.id})">Deduct</button>`}</td><td>${r.from} to ${r.to}</td><td>${deductionLabel}</td><td>${staff?staff.name:r.initial} (${r.initial})</td><td>${Number(r.units||0).toFixed(1).replace('.0','')} day(s)</td><td>-</td><td>${r.reason||r.notes||''}</td><td><span class="status ${deducted?'mcPaid':'mcUnpaid'}">${status}</span>${deducted?.deductedOn?`<br><span class="smallText">Deducted on ${deducted.deductedOn}</span>`:''}</td></tr>`});
  });
 
