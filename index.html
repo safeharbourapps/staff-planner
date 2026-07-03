@@ -24,7 +24,7 @@ input,select,textarea{width:100%;border:1px solid #ddd1c0;background:#fff;border
 button{border:0;border-radius:14px;padding:10px 13px;background:#26211b;color:#fff;cursor:pointer;font-weight:650} button.secondary{background:#efe6d7;color:#2b261f;border:1px solid #dacbb7} button.gold{background:linear-gradient(135deg,#a57936,#d0ae6b)} button.danger{background:var(--danger)} button.ok{background:var(--ok)} button.small{font-size:12px;padding:7px 9px;border-radius:11px}
 .row{display:flex;gap:8px;align-items:center}.row>*{flex:1}.hide{display:none!important}.tabs{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px}.tab{padding:9px 12px;border-radius:999px;background:#eee2d2;color:#2d271f;cursor:pointer;font-weight:650;font-size:13px}.tab.active{background:#2b261f;color:#fff}
 .calendarTop{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:14px}.calendarTop .title{font-size:22px;font-weight:750}
-.cal{display:grid;grid-template-columns:repeat(7,1fr);gap:8px}.dow{font-size:12px;color:#7e7366;text-align:center;font-weight:700}.day{min-height:128px;background:#fff;border:1px solid #e2d8c9;border-radius:16px;padding:8px;position:relative;overflow:hidden}.day.weekend{background:#f7efe4}.day.today{outline:2px solid var(--gold)}.dateNo{font-size:12px;color:#6e6256;font-weight:800}.tag{display:block;margin-top:5px;padding:4px 6px;border-radius:9px;font-size:11px;line-height:1.18;border:1px solid rgba(0,0,0,.06);white-space:normal}.tag.ph{background:#ffe8d6;color:#8a3b18}.tag.leave{background:#ffe3df;color:#8b2f25}.tag.wfh{background:#dfefff;color:#25537c}.tag.wfhchange{background:#cfeedd;color:#1f6844}.tag.wfhspecial{background:#eee6ff;color:#4b2f78}.tag.bday{background:#f6e6ff;color:#643283}.tag.info{background:#e8f5ee;color:#226044}.tag.warn{background:#fff3c9;color:#76540e}.tag.blockout{background:#2b261f;color:#f6dfad}.list{display:flex;flex-direction:column;gap:9px}.item{border:1px solid #e2d8c9;border-radius:16px;padding:12px;background:#fff}.item b{display:block;margin-bottom:4px}.status{font-size:11px;border-radius:999px;padding:3px 8px;display:inline-block;margin-top:5px}.pending{background:#fff3c9;color:#78560b}.approved{background:#e5f5ec;color:#266041}.rejected{background:#ffe0dd;color:#8a2d22}.table{width:100%;border-collapse:collapse;font-size:13px}.table th,.table td{border-bottom:1px solid #eadfce;text-align:left;padding:9px}.table th{color:#64594d;font-size:12px}.notice{border-left:4px solid var(--gold);background:#fff7e8;padding:10px 12px;border-radius:12px;margin:10px 0;color:#574736;font-size:13px}
+.cal{display:grid;grid-template-columns:repeat(7,1fr);gap:8px}.dow{font-size:12px;color:#7e7366;text-align:center;font-weight:700}.day{min-height:128px;background:#fff;border:1px solid #e2d8c9;border-radius:16px;padding:8px;position:relative;overflow:hidden}.day.weekend{background:#f7efe4}.day.today{outline:2px solid var(--gold)}.dateNo{font-size:12px;color:#6e6256;font-weight:800}.tag{display:block;margin-top:5px;padding:4px 6px;border-radius:9px;font-size:11px;line-height:1.18;border:1px solid rgba(0,0,0,.06);white-space:normal}.tag.ph{background:#ffe8d6;color:#8a3b18}.tag.leave{background:#ffe3df;color:#8b2f25}.tag.wfh{background:#dfefff;color:#25537c}.tag.wfhchange{background:#cfeedd;color:#1f6844}.tag.wfhspecial{background:#eee6ff;color:#4b2f78}.tag.bday{background:#f6e6ff;color:#643283}.tag.info{background:#e8f5ee;color:#226044}.tag.warn{background:#fff3c9;color:#76540e}.tag.event{background:#e9f2ff;color:#274d78}.tag.blockout{background:#2b261f;color:#f6dfad}.list{display:flex;flex-direction:column;gap:9px}.item{border:1px solid #e2d8c9;border-radius:16px;padding:12px;background:#fff}.item b{display:block;margin-bottom:4px}.status{font-size:11px;border-radius:999px;padding:3px 8px;display:inline-block;margin-top:5px}.pending{background:#fff3c9;color:#78560b}.approved{background:#e5f5ec;color:#266041}.rejected{background:#ffe0dd;color:#8a2d22}.table{width:100%;border-collapse:collapse;font-size:13px}.table th,.table td{border-bottom:1px solid #eadfce;text-align:left;padding:9px}.table th{color:#64594d;font-size:12px}.notice{border-left:4px solid var(--gold);background:#fff7e8;padding:10px 12px;border-radius:12px;margin:10px 0;color:#574736;font-size:13px}
 .loginBox{max-width:430px;margin:70px auto}.logo{font-family:Georgia,serif;font-size:28px;letter-spacing:.6px}.kpi{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}.kpi .box{background:#fff;border:1px solid #e2d8c9;border-radius:16px;padding:12px}.kpi .num{font-size:20px;font-weight:800}.smallText{font-size:11px;color:#75695c}
 @media(max-width:900px){.grid{grid-template-columns:1fr}.cal{gap:5px}.day{min-height:118px;padding:6px}.calendarTop{flex-direction:column;align-items:stretch}.kpi{grid-template-columns:repeat(2,1fr)}header{padding:17px;align-items:flex-start;flex-direction:column}}
 
@@ -221,7 +221,7 @@ body.isAdmin span.adminOnly.hide{
   <div><div class="logo">Staff Planner</div><div class="muted" style="color:#d8c8ad">Leave · WFH · Birthday Off · Singapore PH</div></div>
   <div class="row" style="flex:0 0 auto">
     <span id="who" class="pill">Not logged in</span>
-    <span id="appVersionLabel" class="pill" style="font-size:11px;color:#d8c8ad" title="Staff Planner version">v2026.06.29.11 | Updated 29 Jun 2026 | Zero MC Claim Acknowledge</span>
+    <span id="appVersionLabel" class="pill" style="font-size:11px;color:#d8c8ad" title="Staff Planner version">v2026.07.03.06 | Updated 03 Jul 2026 | Special Event Calendar Info</span>
     <button id="logoutBtn" class="secondary small hide" onclick="logout()">Logout</button>
   </div>
 
@@ -274,6 +274,7 @@ body.isAdmin span.adminOnly.hide{
         <div class="kpi">
           <div class="box"><div class="num" id="kAL">0</div><div class="smallText">AL Balance</div></div>
           <div class="box"><div class="num" id="kMC">14</div><div class="smallText">MC Balance</div></div>
+          <div class="box" id="kHLBox"><div class="num" id="kHL">60</div><div class="smallText">HL Balance</div></div>
           <div class="box"><div class="num" id="kCL">2</div><div class="smallText">Compassionate</div></div>
           <div class="box"><div class="num" id="kPend">0</div><div class="smallText">Pending</div></div>
           <div class="box"><div class="num" id="kCCL">0</div><div class="smallText">CCL Bal</div></div>
@@ -288,6 +289,7 @@ body.isAdmin span.adminOnly.hide{
         <label>Type</label><select id="applyType">
           <option value="AL">Annual Leave - Full Day</option><option value="AM">Morning Leave</option><option value="PM">Afternoon Leave</option>
           <option value="EL">Emergency Leave</option><option value="CL">Compassionate Leave</option><option value="CCL">Childcare Leave</option><option value="CCLAM">Childcare AM Leave</option><option value="CCLPM">Childcare PM Leave</option><option value="UPL">Unpaid Leave</option>
+          <option value="OCP">On Course - Paid</option><option value="OCU">On Course - Unpaid</option>
         </select>
         <div class="row dateRow"><div><label>From</label><input id="fromDate" type="date" onchange="autoFillToDate()"></div><div><label>To</label><input id="toDate" type="date" onchange="autoFillToDate()"></div></div>
         <label style="margin-top:10px">Quick Duration</label>
@@ -305,19 +307,24 @@ body.isAdmin span.adminOnly.hide{
 
       <section id="panel-mc" class="hide">
         <h3>Submit MC Claim</h3>
-        <label>Staff</label><select id="mcStaff" onchange="updateMCPreview();renderStaffMCClaimStatus()"></select>
+        <label>Staff</label><select id="mcStaff" onchange="updateMCMedicalTypeOptions();updateMCPreview();renderStaffMCClaimStatus()"></select>
+        <label>Medical Leave Type</label>
+        <select id="mcLeaveType" onchange="updateMCMedicalLabels();updateMCPreview()">
+          <option value="MC">Outpatient MC</option>
+          <option value="HL">Hospitalisation Leave</option>
+        </select>
         <div class="mcDateGrid">
           <div>
-            <label>MC From</label>
+            <label id="mcFromLabel">MC From</label>
             <input id="mcDate" type="date" onchange="syncMCTo();updateMCPreview()">
           </div>
           <div>
-            <label>MC To</label>
+            <label id="mcToLabel">MC To</label>
             <input id="mcToDate" type="date" onchange="syncMCTo();updateMCPreview()">
           </div>
         </div>
 
-        <label>MC Duration</label>
+        <label id="mcDurationLabel">MC Duration</label>
         <select id="mcDuration" onchange="syncMCDuration();updateMCPreview()">
           <option value="FULL">Full Day</option>
           <option value="AM">AM Half Day</option>
@@ -336,9 +343,9 @@ body.isAdmin span.adminOnly.hide{
 
         <label>Consultation Fee Amount</label><input id="mcConsultFee" type="number" min="0" step="0.01" placeholder="e.g. 25.00">
 
-        <label>Upload / Scan MC</label><input id="mcFile" type="file" accept="image/*,.pdf" capture="environment">
+        <label id="mcFileLabel">Upload / Scan MC</label><input id="mcFile" type="file" accept="image/*,.pdf" capture="environment">
         <label>Remarks</label><textarea id="mcRemarks"></textarea>
-        <button class="gold" style="width:100%;margin-top:12px" onclick="submitMC()">Submit MC</button>
+        <button id="mcSubmitBtn" class="gold" style="width:100%;margin-top:12px" onclick="submitMC()">Submit MC</button>
 
         <h3 style="margin-top:18px">My MC Claim Payment Status</h3>
         <div id="staffMCClaimStatusList" class="list"></div>
@@ -417,6 +424,7 @@ body.isAdmin span.adminOnly.hide{
         <label>Request Type</label>
         <select id="wfhRequestType" onchange="toggleWFHRequestType()">
           <option value="swap">Swap WFH with same type staff</option>
+          <option value="flex">Flex WFH auto approval</option>
           <option value="special">Special approval WFH without swap</option>
           <option value="internalSwap">Swap with same type staff (Internally)</option>
         </select>
@@ -464,6 +472,7 @@ body.isAdmin span.adminOnly.hide{
         <label>Work Location</label><select id="mLocation" onchange="updateAutoALPreview()"><option value="Local">Local</option><option value="Remote">Remote</option></select>
         <label>Buddy Type</label><select id="mBuddyType"><option value="Local CSO">Local CSO</option><option value="Local Admin">Local Admin (No Covering Rule)</option><option value="Remote Lead">Remote Lead</option><option value="Remote CSO">Remote CSO</option></select>
         <label>Calendar View Permission</label><select id="mCalendarView"><option value="All">All Staff</option><option value="Remote">Remote Only</option><option value="Local">Local Only</option></select>
+        <label>Flex WFH Auto-Approval Allowance Per Week</label><input id="mFlexWFHWeekly" type="number" min="0" step="1" placeholder="0 = no auto-approved Flex WFH">
         <label>Staff Annual Leave Entitlement Base (leave blank to auto-calculate by Location)</label><div id="autoALPreview" class="autoEntitlementHint">Auto entitlement: -</div><input id="mAL" type="number" min="0" step="0.5" placeholder="Blank = default base entitlement" oninput="updateAutoALPreview()">
         <label>Staff Status</label><select id="mStatus"><option value="Active">Active</option><option value="Terminated">Terminated</option></select>
         <label>Termination / Resignation Date</label><input id="mTerminationDate" type="date" onchange="updateAutoALPreview()">
@@ -536,6 +545,14 @@ body.isAdmin span.adminOnly.hide{
         <div class="notice">When a date is blocked, staff leave applications for that date will require Admin approval. Staff can still submit emergency/special requests.</div>
         <h3 style="margin-top:16px">Blocked Dates</h3>
         <div id="blockoutList" class="list"></div>
+
+        <h3 style="margin-top:18px">Special Event</h3>
+        <label>Event Date</label><input id="eventDate" type="date">
+        <label>Event Title</label><input id="eventTitle" placeholder="e.g. Company Dinner 6pm">
+        <button class="gold" style="width:100%;margin-top:12px" onclick="addSpecialEvent()">Add Special Event</button>
+        <div class="notice">Special Events are calendar information only. They do not block leave, require approval, or change working-day calculation.</div>
+        <h3 style="margin-top:16px">Special Events</h3>
+        <div id="specialEventList" class="list"></div>
       </section>
 
 
@@ -626,6 +643,52 @@ body.isAdmin span.adminOnly.hide{
 </div>
 
 <script>
+/*
+CHANGE LOG
+v2026.07.03.06 | Updated 03 Jul 2026 | Special Event Calendar Info
+- Features added: Administrator-only Special Event calendar info items with add/remove list under Block Out Dates.
+- Features changed: Special Events display on the calendar as Event tags and do not affect working-day calculation, leave approval, blockout rules, or balances.
+- Bugs fixed: avoids using Block Out Date for non-blocking company/event reminders.
+- Functions changed: normalizeData, renderAll, addSpecialEvent, deleteSpecialEvent, renderSpecialEvents, specialEventsForDate, renderCalendar.
+- Unchanged: Block Out Date approval behavior, public holiday working-day rules, leave/MC/HL/WFH/On Course flows, Google Sheet save flow.
+- Testing: embedded JavaScript syntax check passes.
+
+v2026.07.03.05 | Updated 03 Jul 2026 | Admin On Course
+- Features added: Administrator-only On Course - Paid and On Course - Unpaid application types; calendar displays both as On Course.
+- Features changed: On Course - Unpaid appears in Claims Payment as a wage deduction with Deduct action.
+- Bugs fixed: non-administrator users cannot see or submit On Course types.
+- Functions changed: renderAll, updateApplyTypeOptions, submitRequest, calendarLeaveLabel, isLeaveTypeForBuddy, attendanceCategoryForRecord, renderClaimsPayment.
+- Unchanged: AL/MC/HL balances, WFH/Flex WFH, buddy system, zero-dollar MC acknowledgement, Google Sheet save flow.
+- Testing: embedded JavaScript syntax check passes.
+
+v2026.07.03.04 | Updated 03 Jul 2026 | Hide Remote HL Balance
+- Features changed: HL Balance box is hidden for staff who are not eligible for Hospitalisation Leave, including Remote and unconfirmed staff.
+- Bugs fixed: Remote staff no longer see a misleading 0 HL Balance card.
+- Functions changed: renderKPI/admin balance card rendering.
+- Unchanged: local confirmed staff Hospitalisation Leave entitlement, MC claim flow, unconfirmed-staff salary deduction, WFH/Flex WFH, buddy system, Google Sheet save flow.
+- Testing: embedded JavaScript syntax check passes.
+
+v2026.07.03.03 | Updated 03 Jul 2026 | Local Only Hospitalisation Leave
+- Features changed: hospitalisation leave is now available only for confirmed Local staff; Remote staff do not see the Hospitalisation Leave option in the MC Claim form.
+- Bugs fixed: Remote confirmed staff no longer receive a 60-day hospitalisation entitlement.
+- Functions changed: hospitalisationEntitlement, updateMCMedicalLabels, renderAll, MC staff selector change handler.
+- Unchanged: outpatient MC entitlement, unconfirmed-staff salary deduction, AL/urgent AL, WFH/Flex WFH, buddy system, zero-dollar MC acknowledgement, Google Sheet save flow.
+- Testing: embedded JavaScript syntax check passes.
+
+v2026.07.03.02 | Updated 03 Jul 2026 | Hospitalisation Leave
+- Features added: hospitalisation leave option inside MC Claim; paid hospitalisation entitlement uses a 60-day yearly pool for confirmed staff and includes outpatient MC already used.
+- Bugs fixed: hospitalisation medical absences now have their own calendar/payment labels instead of being mixed into normal MC wording.
+- Functions changed: updateMCPreview, submitMC, used, calendarLeaveLabel, isLeaveTypeForBuddy, attendanceCategoryForRecord, attendanceAllocatedForCategory, renderStaffMCClaimStatus, renderClaimsPayment.
+- Unchanged: AL/urgent AL, WFH/Flex WFH, buddy system, MC-WFH, unconfirmed-staff salary deduction, zero-dollar MC acknowledgement, Google Sheet save flow.
+- Testing: embedded JavaScript syntax check passes.
+
+v2026.07.03.01 | Updated 03 Jul 2026 | Flex WFH Weekly Allowance
+- Features added: per-staff weekly Flex WFH auto-approval allowance; Flex WFH request type; calendar label for auto-approved Flex WFH.
+- Bugs fixed: none; additive feature only.
+- Files/functions modified: index HTML; member form/save/edit/reset; normalizeData; submitWFHChange; getCalendarWFHList; calendar WFH label helpers.
+- Features intentionally left unchanged: preplanned WFH rotation, WFH swap approvals, special WFH approval, admin manual WFH override/cancel, buddy cover, leave, MC, claims, claims payment.
+- Testing performed: embedded JavaScript syntax check.
+*/
 const DEFAULT_PUBLIC_HOLIDAYS = {
   '2026':[
     ['2026-01-01',"New Year's Day"],['2026-02-17','Chinese New Year'],['2026-02-18','Chinese New Year'],
@@ -660,6 +723,7 @@ const defaults={
 
  records:[],
  blockouts:[],
+ specialEvents:[],
  wfhOverrides:[],
  wfhRemoved:[],
  wfhRequests:[],
@@ -679,10 +743,11 @@ function normalizeData(d){
  if(!d.settings.calendarView)d.settings.calendarView='All';
  if(!d.settings.adminPassword)d.settings.adminPassword='admin123';
  if(!d.settings.wfhSequence)d.settings.wfhSequence=['TPH+TKT','CI+TLH','ZWW+TLK'];
- if(d.members)d.members.forEach(m=>{if(!m.location)m.location='Local'; if(!m.calendarView)m.calendarView='All'; if(!m.children)m.children=[]; if(!m.buddyType)m.buddyType=(m.initial==='TSH'?'Remote Lead':((m.location||'Local')==='Remote'?'Remote CSO':'Local CSO')); if(!m.status)m.status='Active'; if(m.terminated===true)m.status='Terminated'; if(m.wpExpiry===undefined)m.wpExpiry=''; if(m.confirmDate===undefined)m.confirmDate=''; if(m.terminationDate===undefined)m.terminationDate=''; if(m.initial==='LSF'||/renee/i.test(m.name||'')){m.type='Administrator'; m.location='Local'; m.buddyType='Administrator';}});
+ if(d.members)d.members.forEach(m=>{if(!m.location)m.location='Local'; if(!m.calendarView)m.calendarView='All'; if(!m.children)m.children=[]; if(!m.buddyType)m.buddyType=(m.initial==='TSH'?'Remote Lead':((m.location||'Local')==='Remote'?'Remote CSO':'Local CSO')); if(!m.status)m.status='Active'; if(m.terminated===true)m.status='Terminated'; if(m.wpExpiry===undefined)m.wpExpiry=''; if(m.confirmDate===undefined)m.confirmDate=''; if(m.terminationDate===undefined)m.terminationDate=''; if(m.flexWFHWeekly===undefined)m.flexWFHWeekly=0; if(m.initial==='LSF'||/renee/i.test(m.name||'')){m.type='Administrator'; m.location='Local'; m.buddyType='Administrator';}});
  if(d.members)d.members.forEach(m=>{if(m.mustChangePassword===undefined)m.mustChangePassword=false;});
  if(!d.records)d.records=[];
  if(!d.blockouts)d.blockouts=[];
+ if(!d.specialEvents)d.specialEvents=[];
  if(!d.wfhRequests)d.wfhRequests=[];
  if(!d.workTimeRequests)d.workTimeRequests=[];
  if(!d.mcClaims)d.mcClaims=[];
@@ -1115,7 +1180,7 @@ function renderALAdjustmentList(){
 }
 
 
-function renderAll(){renderSelectors();renderCalendar();renderMembers();renderRecords();renderApprovals();renderMCClaims();renderStaffMCClaimStatus();renderStaffGeneralClaimStatus();renderBlockouts();renderWFHChanges();renderWorkTimeChanges();renderCoverSwapRequests();renderBuddySystem();refreshAdminCoverChangeOptions();renderAttendanceSummary();updatePendingTabAlerts();renderKPI();loadSettings();renderPublicHolidayEditor();renderALAdjustmentList();renderWPReminder(); const wfhChangeTab=document.querySelector('.tab[data-tab="wfhchange"]'); if(wfhChangeTab)wfhChangeTab.style.display=(currentUser&&isRemoteStaffUser())?'none':''; if(currentUser&&$('memberCard')){$('memberCard').style.display='none';$('adminTables').style.display='grid';} setTimeout(checkPlannerSoundNotifications,80);}
+function renderAll(){renderSelectors();renderCalendar();renderMembers();renderRecords();renderApprovals();renderMCClaims();renderStaffMCClaimStatus();renderStaffGeneralClaimStatus();renderBlockouts();renderSpecialEvents();renderWFHChanges();renderWorkTimeChanges();renderCoverSwapRequests();renderBuddySystem();refreshAdminCoverChangeOptions();renderAttendanceSummary();updatePendingTabAlerts();renderKPI();loadSettings();renderPublicHolidayEditor();renderALAdjustmentList();renderWPReminder();updateMCMedicalTypeOptions();updateApplyTypeOptions(); const wfhChangeTab=document.querySelector('.tab[data-tab="wfhchange"]'); if(wfhChangeTab)wfhChangeTab.style.display=(currentUser&&isRemoteStaffUser())?'none':''; if(currentUser&&$('memberCard')){$('memberCard').style.display='none';$('adminTables').style.display='grid';} setTimeout(checkPlannerSoundNotifications,80);}
 function renderSelectors(){
  const d=data();
 
@@ -1202,6 +1267,29 @@ function leaveUnits(type,a,b,member){
  if(type==='AM'||type==='PM'||type==='CCLAM'||type==='CCLPM') return 0.5;
  return workingDays(a,b,member);
 }
+
+function isOnCourseType(type){
+ return ['OCP','OCU'].includes(type);
+}
+
+function updateApplyTypeOptions(){
+ const select=$('applyType');
+ if(!select)return;
+ const courseOptions=[
+  {value:'OCP',label:'On Course - Paid'},
+  {value:'OCU',label:'On Course - Unpaid'}
+ ];
+ courseOptions.forEach(opt=>{
+  const existing=Array.from(select.options).find(o=>o.value===opt.value);
+  if(isAdministrator()){
+   if(!existing)select.add(new Option(opt.label,opt.value));
+  }else if(existing){
+   if(select.value===opt.value)select.value='AL';
+   existing.remove();
+  }
+ });
+}
+
 function birthdayOff(member,year){
  if(!member.birthday)return null; const bd=fmt(member.birthday); let d=new Date(year,bd.getMonth(),bd.getDate());
  const day=d.getDay();
@@ -1310,6 +1398,39 @@ function renderBlockouts(){
  $('blockoutList').innerHTML=list.map(b=>`<div class="item"><b>${b.date}</b><div class="muted">${b.reason||'Blocked out date'}</div><button class="danger small" style="margin-top:9px" onclick="deleteBlockout(${b.id})">Remove</button></div>`).join('')||'<div class="muted">No blocked dates yet.</div>';
 }
 
+function specialEventsForDate(date){
+ const d=data();
+ return (d.specialEvents||[]).filter(e=>e.date===date);
+}
+function addSpecialEvent(){
+ if(!isAdministrator())return alert('Only Administrator can add Special Events.');
+ const d=data();
+ if(!d.specialEvents)d.specialEvents=[];
+ const date=$('eventDate').value;
+ const title=$('eventTitle').value.trim();
+ if(!date)return alert('Please choose event date.');
+ if(!title)return alert('Please enter event title.');
+ d.specialEvents.push({id:Date.now(),date,title});
+ save(d);
+ $('eventDate').value='';
+ $('eventTitle').value='';
+ renderAll();
+}
+function deleteSpecialEvent(id){
+ if(!isAdministrator())return alert('Only Administrator can remove Special Events.');
+ const d=data();
+ if(!confirm('Remove this special event?'))return;
+ d.specialEvents=(d.specialEvents||[]).filter(e=>e.id!==id);
+ save(d);
+ renderAll();
+}
+function renderSpecialEvents(){
+ if(!$('specialEventList'))return;
+ const d=data();
+ const list=(d.specialEvents||[]).slice().sort((a,b)=>a.date.localeCompare(b.date));
+ $('specialEventList').innerHTML=list.map(e=>`<div class="item"><b>${e.date}</b><div class="muted">${e.title||'Special Event'}</div><button class="danger small" style="margin-top:9px" onclick="deleteSpecialEvent(${e.id})">Remove</button></div>`).join('')||'<div class="muted">No special events yet.</div>';
+}
+
 
 
 function getBaseWFHList(date){
@@ -1368,8 +1489,34 @@ function isWFHRemoved(date, initial){
 
 function toggleWFHRequestType(){
  const type=$('wfhRequestType')?$('wfhRequestType').value:'swap';
- if($('wfhOriginalWrap')) $('wfhOriginalWrap').style.display=type==='special'?'none':'block';
- if($('wfhNewDateLabel')) $('wfhNewDateLabel').textContent=type==='special'?'Requested WFH Date':(type==='internalSwap'?'Intended WFH Date':'Requested New WFH Date');
+ if($('wfhOriginalWrap')) $('wfhOriginalWrap').style.display=(type==='special'||type==='flex')?'none':'block';
+ if($('wfhNewDateLabel')) $('wfhNewDateLabel').textContent=type==='special'?'Requested WFH Date':(type==='flex'?'Flex WFH Date':(type==='internalSwap'?'Intended WFH Date':'Requested New WFH Date'));
+}
+
+function flexWFHWeekBounds(date){
+ const start=fmt(date);
+ const day=start.getDay();
+ const offset=day===0?-6:1-day;
+ start.setDate(start.getDate()+offset);
+ const end=new Date(start);
+ end.setDate(start.getDate()+6);
+ return {start:iso(start),end:iso(end)};
+}
+
+function flexWFHAllowance(member){
+ return Math.max(0,Number(member&&member.flexWFHWeekly)||0);
+}
+
+function flexWFHUsedThisWeek(initial,date){
+ const d=data();
+ const bounds=flexWFHWeekBounds(date);
+ return (d.wfhRequests||[]).filter(r=>
+  r.initial===initial &&
+  r.requestType==='flex' &&
+  r.status==='Approved' &&
+  r.newDate>=bounds.start &&
+  r.newDate<=bounds.end
+ ).length;
 }
 
 function submitWFHChange(){
@@ -1386,8 +1533,26 @@ function submitWFHChange(){
  if(!initial||!newDate)return alert('Please select staff and requested WFH date.');
 
  const staff=d.members.find(m=>m.initial===initial);
- if(requestType!=='special' && !isLocalWFHEligible(staff)){
+ if(!['special','flex'].includes(requestType) && !isLocalWFHEligible(staff)){
   return alert('WFH swap request is only for active Local CSO/Admin. Administrator, Remote and Terminated staff are excluded.');
+ }
+ if(requestType==='flex'){
+  if(!staff)return alert('Staff record not found.');
+  if(!isLocalWFHEligible(staff))return alert('Flex WFH auto approval is only for active Local CSO/Admin staff.');
+  if(!isWorkingDay(newDate,staff))return alert('Flex WFH can only be planned on this staff working day.');
+  if(getCalendarWFHList(newDate).includes(initial))return alert('This staff is already WFH on the selected date. Flex WFH must be an additional WFH day.');
+  const allowance=flexWFHAllowance(staff);
+  if(allowance<=0)return alert('This staff has no Flex WFH auto-approval allowance. Please update the staff profile first.');
+  const usedThisWeek=flexWFHUsedThisWeek(initial,newDate);
+  if(usedThisWeek>=allowance)return alert('Flex WFH weekly allowance reached for this staff. This request needs normal Special approval instead.');
+  d.wfhRequests.push({id:Date.now(),initial,requestType:'flex',originalDate:'',newDate,reason:reason||'Flex WFH auto-approved',status:'Approved',approvedBy:'System',approvedOn:iso(new Date())});
+  save(d);
+  if($('wfhOriginalDate')) $('wfhOriginalDate').value='';
+  $('wfhNewDate').value='';
+  $('wfhReason').value='';
+  renderAll();
+  alert('Flex WFH auto-approved. Weekly usage: '+(usedThisWeek+1)+' / '+allowance+'.');
+  return;
  }
  if(requestType==='special'){
   if(!staff){
@@ -1674,7 +1839,7 @@ function renderWFHChanges(){
    const canApprove=isAdministrator()&&r.status==='Pending';
    const canApproveInternal=currentUser && r.requestType==='internalSwap' && r.status==='Pending Staff Approval' && r.swapWith===currentUser.initial;
    const canCancelWFH=isAdministrator()&&r.status==='Approved';
-   const requestTitle=r.requestType==='special'?'Special WFH Request':(r.requestType==='internalSwap'?'Internal WFH Swap':'WFH Change');
+   const requestTitle=r.requestType==='special'?'Special WFH Request':(r.requestType==='flex'?'Flex WFH Auto Approval':(r.requestType==='internalSwap'?'Internal WFH Swap':'WFH Change'));
    const statusClass=(r.status||'').toLowerCase().replace(/\s+/g,'');
    return `<div class="item"><b>${staffName} (${r.initial}) - ${requestTitle}</b><div>${r.requestType==='special'?r.newDate:(r.originalDate+' → '+r.newDate)}</div><div class="muted">${r.swapWith?`Swap with: ${r.swapWith}<br>`:''}${r.reason||''}</div><span class="status ${statusClass}">${r.status}</span>${canApprove?`<div class="row" style="margin-top:9px"><button class="ok small" onclick="approveWFHChange(${r.id},'Approved')">Approve</button><button class="danger small" onclick="approveWFHChange(${r.id},'Rejected')">Reject</button></div>`:''}${canApproveInternal?`<div class="row" style="margin-top:9px"><button class="ok small" onclick="approveInternalWFHChange(${r.id},'Approved')">Approve Swap</button><button class="danger small" onclick="approveInternalWFHChange(${r.id},'Rejected')">Reject Swap</button></div>`:''}${canCancelWFH?`<div class="row" style="margin-top:9px"><button class="danger small" onclick="cancelWFHChange(${r.id})">Cancel WFH</button></div>`:''}</div>`;
  }
@@ -1757,18 +1922,19 @@ function submitRequest(){
 
  if(isAdministrator()&&!$('applyStaff').value)return alert('Please select staff.');
 
- const d=data(), initial=$('applyStaff').value, member=d.members.find(m=>m.initial===initial), type=$('applyType').value;
- if(!isActiveMember(member))return alert('This staff is terminated and cannot submit leave.');
- const from=$('fromDate').value, to=$('toDate').value||from; if(!from||!to)return alert('Please choose date.');
+  const d=data(), initial=$('applyStaff').value, member=d.members.find(m=>m.initial===initial), type=$('applyType').value;
+  if(!isActiveMember(member))return alert('This staff is terminated and cannot submit leave.');
+  if(isOnCourseType(type) && !isAdministrator())return alert('Only Administrator can apply On Course records.');
+  const from=$('fromDate').value, to=$('toDate').value||from; if(!from||!to)return alert('Please choose date.');
  const leaveYear=Number(from.slice(0,4));
  if(from.slice(0,4)!==to.slice(0,4)){
   return alert('Please submit separate applications for different leave years.');
  }
  const leaveReason=$('reason').value.trim();
  if(!leaveReason)return alert('Please enter reason before submitting leave application.');
- let needApproval=false, notes=[];
+  let needApproval=false, notes=[];
 
- let days=workingDays(from,to,member), units=leaveUnits(type,from,to,member);
+  let days=workingDays(from,to,member), units=leaveUnits(type,from,to,member);
 
  const newDates=eachDate(from,to);
  const duplicateOwnLeave=d.records.some(r=>
@@ -1784,7 +1950,11 @@ function submitRequest(){
   return alert('This staff already has an active leave/MC record on one or more selected dates. Please cancel the existing record first before reapplying.');
  }
 
- // Balance check: if no AL / CCL balance, staff cannot apply that leave type. They may apply Unpaid Leave instead.
+  if(isOnCourseType(type)){
+   notes.push(type==='OCU'?'On Course - Unpaid entered by Administrator.':'On Course - Paid entered by Administrator.');
+  }
+
+  // Balance check: if no AL / CCL balance, staff cannot apply that leave type. They may apply Unpaid Leave instead.
  const alBal=alEntitlement(member,leaveYear)+phInLieuBonus(member,leaveYear)-used(initial,'AL',leaveYear)+alAdjustmentTotal(initial,leaveYear);
  const cclBal=childcareBalance(member);
 
@@ -1809,7 +1979,7 @@ function submitRequest(){
  }
 
  // Same rule for CSO and Admin: only 1 same-type staff on leave per day.
- if(type!=='WFH' && (member.type==='CSO' || member.type==='Admin')){
+  if(type!=='WFH' && !isOnCourseType(type) && (member.type==='CSO' || member.type==='Admin')){
   for(const date of eachDate(from,to)){
    let sameTypeTaken=d.records.some(r=>{
     if(r.status==='Cancelled'||r.status==='Rejected'||r.type==='WFH') return false;
@@ -1826,7 +1996,7 @@ function submitRequest(){
  }
 
  const blockedDates=eachDate(from,to).filter(date=>getBlockout(date));
- if(type!=='WFH' && blockedDates.length>0){
+  if(type!=='WFH' && !isOnCourseType(type) && blockedDates.length>0){
   needApproval=true;
   notes.push('Selected date includes Admin block out date. Emergency/special request requires admin approval.');
  }
@@ -1841,16 +2011,60 @@ function submitRequest(){
  }
 
  if(type==='EL' && days<3){needApproval=true; notes.push('Emergency leave below 3 days requires approval.')}
- if(days>5){needApproval=true; notes.push('More than 5 straight working days requires approval.')}
+  if(!isOnCourseType(type) && days>5){needApproval=true; notes.push('More than 5 straight working days requires approval.')}
 
- if(member.packer!=='No'){
+ if(member.packer!=='No' && !isOnCourseType(type)){
   for(const date of eachDate(from,to)){ if(packerConflict(initial,date)){needApproval=true;notes.push('Packer duty requires 2 staff on duty. Admin approval required.');break}}
  }
 
- const status=needApproval?'Pending':'Approved';
- if(status==='Approved')captureBuddyLocksForFrozenWindow_(d,'Auto-approved leave submitted');
+ const status=isOnCourseType(type)?'Approved':(needApproval?'Pending':'Approved');
+ if(status==='Approved')captureBuddyLocksForFrozenWindow_(d,isOnCourseType(type)?'On Course entered by Administrator':'Auto-approved leave submitted');
  d.records.push({id:Date.now(),initial,type,from,to,reason:$('reason').value,units,status,notes:notes.join(' ')});
  save(d);$('applyMsg').classList.remove('hide');$('applyMsg').innerHTML=`Submitted as <b>${status}</b>. ${notes.join(' ')}`;renderAll();
+}
+
+function selectedMedicalLeaveType(){
+ return ($('mcLeaveType')&&$('mcLeaveType').value)||'MC';
+}
+function medicalLeaveTypeName(type=selectedMedicalLeaveType()){
+ return type==='HL'?'Hospitalisation Leave':'MC';
+}
+function selectedMCMember(){
+ const d=data();
+ let initial=$('mcStaff')&&$('mcStaff').value;
+ if(!isAdministrator() && currentUser)initial=currentUser.initial;
+ return (d.members||[]).find(m=>m.initial===initial)||null;
+}
+function canUseHospitalisationLeave(member){
+ return !!(member && member.confirmDate && (member.location||'Local')!=='Remote');
+}
+function updateMCMedicalTypeOptions(){
+ const select=$('mcLeaveType');
+ if(!select)return;
+ const member=selectedMCMember();
+ const allowHL=canUseHospitalisationLeave(member);
+ const existingHL=Array.from(select.options).find(o=>o.value==='HL');
+ if(allowHL && !existingHL){
+  select.add(new Option('Hospitalisation Leave','HL'));
+ }
+ if(!allowHL && existingHL){
+  if(select.value==='HL')select.value='MC';
+  existingHL.remove();
+ }
+ updateMCMedicalLabels();
+}
+function updateMCMedicalLabels(){
+ const isHL=selectedMedicalLeaveType()==='HL';
+ const name=isHL?'Hospitalisation Leave':'MC';
+ if($('mcFromLabel'))$('mcFromLabel').textContent=name+' From';
+ if($('mcToLabel'))$('mcToLabel').textContent=name+' To';
+ if($('mcDurationLabel'))$('mcDurationLabel').textContent=name+' Duration';
+ if($('mcFileLabel'))$('mcFileLabel').textContent=isHL?'Upload / Scan Hospitalisation Document':'Upload / Scan MC';
+ if($('mcSubmitBtn'))$('mcSubmitBtn').textContent=isHL?'Submit Hospitalisation Leave':'Submit MC';
+ if($('staffMCClaimStatusList')){
+  const title=$('staffMCClaimStatusList').previousElementSibling;
+  if(title)title.textContent=isHL?'My Medical Claim Payment Status':'My MC Claim Payment Status';
+ }
 }
 
 function syncMCTo(){
@@ -1944,12 +2158,18 @@ function updateMCPreview(){
  const realMCDates=workingDates.filter(x=>!mcWFHSet.has(x));
  const units=isHalfDayMC() && realMCDates.length ? 0.5 : realMCDates.length;
  const mcWFHCount=allDates.filter(x=>mcWFHSet.has(x)).length;
- const bal=(mcEntitlement(member)-used(initial,'MC')-units).toFixed(1).replace('.0','');
- const durationText=isHalfDayMC()?`${selectedMCDuration()} Half Day`:'Full Day';
- $('mcPreview').innerHTML=`MC duration: <b>${durationText}</b><br>Actual MC days to deduct: <b>${units}</b><br>MC-WFH selected days: <b>${mcWFHCount}</b><br>Estimated MC balance after submission: <b>${bal}</b>`;
+  const leaveType=selectedMedicalLeaveType();
+  const entitlement=leaveType==='HL'?hospitalisationEntitlement(member):mcEntitlement(member);
+  const alreadyUsed=leaveType==='HL'?used(initial,'HOSPITALISATION_POOL'):used(initial,'MC');
+  const bal=(entitlement-alreadyUsed-units).toFixed(1).replace('.0','');
+  const durationText=isHalfDayMC()?`${selectedMCDuration()} Half Day`:'Full Day';
+  const name=medicalLeaveTypeName(leaveType);
+  const balanceLabel=leaveType==='HL'?'Estimated hospitalisation balance after submission':'Estimated MC balance after submission';
+  const poolNote=leaveType==='HL'?'<br><span class="smallText">Hospitalisation balance includes outpatient MC already used this year.</span>':'';
+  $('mcPreview').innerHTML=`${name} duration: <b>${durationText}</b><br>Actual ${name} days to deduct: <b>${units}</b><br>MC-WFH selected days: <b>${mcWFHCount}</b><br>${balanceLabel}: <b>${bal}</b>${poolNote}`;
 }
 
-function cancelOverlappingLeaveForMC(initial, from, to){
+function cancelOverlappingLeaveForMC(initial, from, to, leaveName='MC'){
  const d=data();
  const mcDates=eachDate(from,to);
  let cancelledCount=0;
@@ -1968,9 +2188,9 @@ function cancelOverlappingLeaveForMC(initial, from, to){
 
    // Cancel original record for audit trail
    r.status='Cancelled';
-   r.cancelledBy='MC';
-   r.cancelledOn=iso(new Date());
-   r.notes=(r.notes?r.notes+' ':'')+'Partially/fully auto-cancelled because staff submitted MC for overlapping date(s).';
+    r.cancelledBy=leaveName;
+    r.cancelledOn=iso(new Date());
+    r.notes=(r.notes?r.notes+' ':'')+'Partially/fully auto-cancelled because staff submitted '+leaveName+' for overlapping date(s).';
    cancelledCount++;
 
    // Re-create remaining leave date groups so only MC date(s) are replaced
@@ -2004,7 +2224,7 @@ function cancelOverlappingLeaveForMC(initial, from, to){
       to:g[g.length-1],
       units,
       status:'Approved',
-      notes:(r.notes||'')+' Remaining leave kept after MC replacement.',
+      notes:(r.notes||'')+' Remaining leave kept after '+leaveName+' replacement.',
       cancelledBy:'',
       cancelledOn:''
      });
@@ -2051,20 +2271,23 @@ async function fileToBase64(file){
  });
 }
 async function submitMC(){
- if(isAdministrator()&&!$('mcStaff').value)return alert('Please select staff.');
+  if(isAdministrator()&&!$('mcStaff').value)return alert('Please select staff.');
+  const leaveType=selectedMedicalLeaveType();
+  const leaveName=medicalLeaveTypeName(leaveType);
 
- const mcDateError=validateDateRangeFields('mcDate','mcToDate','MC');
- if(mcDateError)return alert(mcDateError);
+  const mcDateError=validateDateRangeFields('mcDate','mcToDate',leaveName);
+  if(mcDateError)return alert(mcDateError);
 
- const d=data(), initial=$('mcStaff').value, date=$('mcDate').value, to=($('mcToDate')&&$('mcToDate').value)||date;
- if(!date)return alert('Please choose MC date.');
- const mcYear=Number(date.slice(0,4));
- if(date.slice(0,4)!==to.slice(0,4)){
-  return alert('Please submit separate MC applications for different leave years.');
- }
- const member=d.members.find(m=>m.initial===initial);
- if(!isActiveMember(member))return alert('This staff is terminated and cannot submit MC.');
- const allDates=eachDate(date,to);
+  const d=data(), initial=$('mcStaff').value, date=$('mcDate').value, to=($('mcToDate')&&$('mcToDate').value)||date;
+  if(!date)return alert('Please choose '+leaveName+' date.');
+  const mcYear=Number(date.slice(0,4));
+  if(date.slice(0,4)!==to.slice(0,4)){
+   return alert('Please submit separate '+leaveName+' applications for different leave years.');
+  }
+  const member=d.members.find(m=>m.initial===initial);
+  if(!isActiveMember(member))return alert('This staff is terminated and cannot submit '+leaveName+'.');
+  if(leaveType==='HL' && !canUseHospitalisationLeave(member))return alert('Hospitalisation Leave is only available for confirmed Local staff.');
+  const allDates=eachDate(date,to);
  const workingDates=allDates.filter(x=>isWorkingDay(x,member));
  const halfDayMC=isHalfDayMC();
  const mcSession=selectedMCDuration();
@@ -2074,11 +2297,11 @@ async function submitMC(){
  const realMCDates=workingDates.filter(x=>!mcWFHSet.has(x));
  const mcUnitPerDate=halfDayMC?0.5:1;
  const units=realMCDates.length*mcUnitPerDate;
- if(workingDates.length<=0 && mcWFHDates.length<=0)return alert('Selected MC period has no working days for this staff. Please select MC-WFH date if staff is working from home.');
- if(units<=0 && mcWFHDates.length<=0)return alert('Please select at least one actual MC or MC-WFH date.');
+  if(workingDates.length<=0 && mcWFHDates.length<=0)return alert('Selected '+leaveName+' period has no working days for this staff. Please select MC-WFH date if staff is working from home.');
+  if(units<=0 && mcWFHDates.length<=0)return alert('Please select at least one actual '+leaveName+' or MC-WFH date.');
 
- captureBuddyLocksForFrozenWindow_(d,'MC submitted');
- const cancelledCount=(!halfDayMC && realMCDates.length) ? cancelOverlappingLeaveForMC(initial,realMCDates[0],realMCDates[realMCDates.length-1]) : 0;
+  captureBuddyLocksForFrozenWindow_(d,leaveName+' submitted');
+  const cancelledCount=(!halfDayMC && realMCDates.length) ? cancelOverlappingLeaveForMC(initial,realMCDates[0],realMCDates[realMCDates.length-1],leaveName) : 0;
 
  const latest=data();
  const file=$('mcFile').files[0];
@@ -2089,16 +2312,16 @@ async function submitMC(){
  const latestMember=latest.members.find(m=>m.initial===initial)||member;
  const unconfirmedStaff=!latestMember.confirmDate;
  if(unconfirmedStaff) consultFee=0;
- const mcBal=Math.max(0,mcEntitlement(latestMember)-used(initial,'MC',mcYear));
- const alBal=Math.max(0,alEntitlement(latestMember,mcYear)+phInLieuBonus(latestMember,mcYear)-used(initial,'AL',mcYear)+alAdjustmentTotal(initial,mcYear));
- let remainingMC=mcBal;
- let remainingAL=alBal;
- const buckets={MC:[],AL:[],UPL:[]};
+  const medicalBal=Math.max(0,(leaveType==='HL'?hospitalisationEntitlement(latestMember):mcEntitlement(latestMember))-used(initial,leaveType==='HL'?'HOSPITALISATION_POOL':'MC',mcYear));
+  const alBal=Math.max(0,alEntitlement(latestMember,mcYear)+phInLieuBonus(latestMember,mcYear)-used(initial,'AL',mcYear)+alAdjustmentTotal(initial,mcYear));
+  let remainingMedical=medicalBal;
+  let remainingAL=alBal;
+  const buckets={medical:[],AL:[],UPL:[]};
 
- realMCDates.forEach(day=>{
-  if(remainingMC>=mcUnitPerDate){
-   buckets.MC.push(day);
-   remainingMC-=mcUnitPerDate;
+  realMCDates.forEach(day=>{
+   if(remainingMedical>=mcUnitPerDate){
+    buckets.medical.push(day);
+    remainingMedical-=mcUnitPerDate;
   }else if(remainingAL>=mcUnitPerDate){
    buckets.AL.push(day);
    remainingAL-=mcUnitPerDate;
@@ -2107,11 +2330,12 @@ async function submitMC(){
   }
  });
 
- const baseId=Date.now();
- const noteParts=[];
- if(buckets.AL.length) noteParts.push((buckets.AL.length*mcUnitPerDate)+' day(s) exceeded MC entitlement and deducted as Annual Leave.');
- if(buckets.UPL.length) noteParts.push((buckets.UPL.length*mcUnitPerDate)+' day(s) exceeded MC/AL entitlement and captured as Unpaid Leave.');
- if(unconfirmedStaff) noteParts.push('Unconfirmed staff: MC absence is salary deduction and consultation fee is not payable.');
+  const baseId=Date.now();
+  const noteParts=[];
+  if(buckets.AL.length) noteParts.push((buckets.AL.length*mcUnitPerDate)+' day(s) exceeded '+leaveName+' entitlement and deducted as Annual Leave.');
+  if(buckets.UPL.length) noteParts.push((buckets.UPL.length*mcUnitPerDate)+' day(s) exceeded '+leaveName+'/AL entitlement and captured as Unpaid Leave.');
+  if(unconfirmedStaff) noteParts.push('Unconfirmed staff: '+leaveName+' absence is salary deduction and consultation fee is not payable.');
+  if(leaveType==='HL') noteParts.push('Hospitalisation leave entitlement is capped at 60 days per year including outpatient MC already used.');
  const autoNote=noteParts.join(' ');
 
  const createdRecordIds=[];
@@ -2132,15 +2356,15 @@ async function submitMC(){
      file:fileName,
      consultFee:consultFee,
      mcSession:halfDayMC && type!=='MCWFH' ? mcSession : '',
-     notes:label+(halfDayMC && type!=='MCWFH' ? ' '+mcSession+' half-day MC.' : '')+(autoNote?' '+autoNote:'')
-    });
-  });
- };
+      notes:label+(halfDayMC && type!=='MCWFH' ? ' '+mcSession+' half-day '+leaveName+'.' : '')+(autoNote?' '+autoNote:'')
+     });
+   });
+  };
 
- createRecords('MC',buckets.MC,0,'MC submitted.');
- createRecords('AL',buckets.AL,1000,'Auto deducted from Annual Leave due to exceeded MC entitlement.');
- createRecords('UPL',buckets.UPL,2000,'Auto captured as Unpaid Leave due to exceeded MC and AL entitlement.');
- createRecords('MCWFH',mcWFHDates,2500,'MC-WFH submitted. No MC deduction and no covering required.');
+  createRecords(leaveType,buckets.medical,0,leaveName+' submitted.');
+  createRecords('AL',buckets.AL,1000,'Auto deducted from Annual Leave due to exceeded '+leaveName+' entitlement.');
+  createRecords('UPL',buckets.UPL,2000,'Auto captured as Unpaid Leave due to exceeded '+leaveName+' and AL entitlement.');
+  createRecords('MCWFH',mcWFHDates,2500,'MC-WFH submitted. No '+leaveName+' deduction and no covering required.');
 
  if(!latest.mcClaims)latest.mcClaims=[];
  latest.mcClaims.push({
@@ -2153,9 +2377,10 @@ async function submitMC(){
   remarks,
   file:fileName,
   fileName:fileName,
-  fileData:mcAttachment.receiptData||'',
-  fileUrl:'',
-  status:'Unpaid',
+   fileData:mcAttachment.receiptData||'',
+   fileUrl:'',
+   medicalType:leaveType,
+   status:'Unpaid',
   submittedOn:iso(new Date()),
   paidOn:''
  });
@@ -2163,21 +2388,23 @@ async function submitMC(){
  save(latest);
  if(mcAttachment.receiptData)refreshCloudAfterAttachmentSave();
 
- $('mcDate').value='';
- if($('mcToDate')) $('mcToDate').value='';
- if($('mcDuration')) $('mcDuration').value='FULL';
- if($('mcConsultFee')) $('mcConsultFee').value='';
- $('mcRemarks').value='';
- if($('mcFile')) $('mcFile').value='';
- if($('mcPreview')) $('mcPreview').innerHTML='Select MC date to preview deduction.';
+  $('mcDate').value='';
+  if($('mcToDate')) $('mcToDate').value='';
+  if($('mcDuration')) $('mcDuration').value='FULL';
+  if($('mcLeaveType')) $('mcLeaveType').value='MC';
+  if($('mcConsultFee')) $('mcConsultFee').value='';
+  $('mcRemarks').value='';
+  if($('mcFile')) $('mcFile').value='';
+  if($('mcPreview')) $('mcPreview').innerHTML='Select MC date to preview deduction.';
  if($('mcWFHOptions')){$('mcWFHOptions').innerHTML='';$('mcWFHOptions').classList.add('hide');}
 
- const breakdown=[];
- if(buckets.MC.length)breakdown.push((buckets.MC.length*mcUnitPerDate)+' MC');
- if(buckets.AL.length)breakdown.push((buckets.AL.length*mcUnitPerDate)+' AL');
- if(buckets.UPL.length)breakdown.push((buckets.UPL.length*mcUnitPerDate)+' Unpaid Leave');
- if(mcWFHDates.length)breakdown.push(mcWFHDates.length+' MC-WFH');
- alert('MC submitted. Deduction breakdown: '+breakdown.join(', ')+'. '+(cancelledCount>0?cancelledCount+' overlapping leave record(s) were automatically cancelled and replaced by MC. ':'')+'File name recorded: '+fileName+(consultFee>0?'. Consultation fee: $'+consultFee.toFixed(2):''));
+  const breakdown=[];
+  if(buckets.medical.length)breakdown.push((buckets.medical.length*mcUnitPerDate)+' '+leaveName);
+  if(buckets.AL.length)breakdown.push((buckets.AL.length*mcUnitPerDate)+' AL');
+  if(buckets.UPL.length)breakdown.push((buckets.UPL.length*mcUnitPerDate)+' Unpaid Leave');
+  if(mcWFHDates.length)breakdown.push(mcWFHDates.length+' MC-WFH');
+  updateMCMedicalLabels();
+  alert(leaveName+' submitted. Deduction breakdown: '+breakdown.join(', ')+'. '+(cancelledCount>0?cancelledCount+' overlapping leave record(s) were automatically cancelled and replaced by '+leaveName+'. ':'')+'File name recorded: '+fileName+(consultFee>0?'. Consultation fee: $'+consultFee.toFixed(2):''));
  renderAll();
 }
 
@@ -2218,9 +2445,10 @@ function resetMemberForm(){
  $('mWeek').value='5';
  $('mPacker').value='No';
  if($('mLocation')) $('mLocation').value='Local';
- if($('mBuddyType')) $('mBuddyType').value='Local CSO';
- if($('mCalendarView')) $('mCalendarView').value='All';
- if($('mStatus')) $('mStatus').value='Active';
+  if($('mBuddyType')) $('mBuddyType').value='Local CSO';
+  if($('mCalendarView')) $('mCalendarView').value='All';
+  if($('mFlexWFHWeekly')) $('mFlexWFHWeekly').value='';
+  if($('mStatus')) $('mStatus').value='Active';
  if($('mTerminationDate')) $('mTerminationDate').value='';
  if($('mWpExpiry')) $('mWpExpiry').value='';
  $('mAL').value='';
@@ -2260,9 +2488,10 @@ function editMember(initial){
   $('mWeek').value=m.week||'5';
   $('mPacker').value=m.packer||'No';
   if($('mLocation')) $('mLocation').value=m.location||'Local';
-  if($('mBuddyType')) $('mBuddyType').value=m.buddyType||(m.initial==='TSH'?'Remote Lead':((m.location||'Local')==='Remote'?'Remote CSO':'Local CSO'));
-  if($('mCalendarView')) $('mCalendarView').value=m.calendarView||'All';
-  if($('mStatus')) $('mStatus').value=m.status||'Active';
+   if($('mBuddyType')) $('mBuddyType').value=m.buddyType||(m.initial==='TSH'?'Remote Lead':((m.location||'Local')==='Remote'?'Remote CSO':'Local CSO'));
+   if($('mCalendarView')) $('mCalendarView').value=m.calendarView||'All';
+   if($('mFlexWFHWeekly')) $('mFlexWFHWeekly').value=Number(m.flexWFHWeekly||0)||'';
+   if($('mStatus')) $('mStatus').value=m.status||'Active';
   if($('mTerminationDate')) $('mTerminationDate').value=m.terminationDate||'';
   if($('mWpExpiry')) $('mWpExpiry').value=m.wpExpiry||'';
   updateAutoALPreview();
@@ -2311,10 +2540,10 @@ function addMember(){
     week:$('mWeek').value,
     packer:$('mPacker').value,
     location:($('mLocation')&&$('mLocation').value)||'Local',
-  buddyType:($('mBuddyType')&&$('mBuddyType').value)||'Local CSO',
-    buddyType:($('mBuddyType')&&$('mBuddyType').value)||'Local CSO',
-    calendarView:($('mCalendarView')&&$('mCalendarView').value)||'All',
-    status:($('mStatus')&&$('mStatus').value)||'Active',
+     buddyType:($('mBuddyType')&&$('mBuddyType').value)||'Local CSO',
+     calendarView:($('mCalendarView')&&$('mCalendarView').value)||'All',
+     flexWFHWeekly:Math.max(0,Number($('mFlexWFHWeekly') ? $('mFlexWFHWeekly').value : 0) || 0),
+     status:($('mStatus')&&$('mStatus').value)||'Active',
     terminationDate:($('mTerminationDate')&&$('mTerminationDate').value)||'',
     wpExpiry:($('mWpExpiry')&&$('mWpExpiry').value)||'',
     alOverride:($('mAL').value!==''?+$('mAL').value:'')
@@ -2343,9 +2572,10 @@ function addMember(){
   children:collectChildrenFromForm(),
   week:$('mWeek').value,
   packer:$('mPacker').value,
-  location:($('mLocation')&&$('mLocation').value)||'Local',
-  calendarView:($('mCalendarView')&&$('mCalendarView').value)||'All',
-  status:($('mStatus')&&$('mStatus').value)||'Active',
+   location:($('mLocation')&&$('mLocation').value)||'Local',
+   calendarView:($('mCalendarView')&&$('mCalendarView').value)||'All',
+    flexWFHWeekly:Math.max(0,Number($('mFlexWFHWeekly') ? $('mFlexWFHWeekly').value : 0) || 0),
+   status:($('mStatus')&&$('mStatus').value)||'Active',
   terminationDate:($('mTerminationDate')&&$('mTerminationDate').value)||'',
   wpExpiry:($('mWpExpiry')&&$('mWpExpiry').value)||'',
   alOverride:($('mAL').value!==''?+$('mAL').value:''),
@@ -2515,9 +2745,9 @@ function getCalendarWFHList(date){
  (d.wfhRequests||[]).forEach(r=>{
   if(r.status!=='Approved') return;
 
-  if(r.requestType==='special'){
-   if(date===r.newDate && !list.includes(r.initial)) list.push(r.initial);
-   return;
+  if(r.requestType==='special'||r.requestType==='flex'){
+    if(date===r.newDate && !list.includes(r.initial)) list.push(r.initial);
+    return;
   }
 
   const req=r.initial;
@@ -2559,6 +2789,11 @@ function getCalendarWFHList(date){
 function isSpecialApprovedWFH(date, initial){
  const d=data();
  return (d.wfhRequests||[]).some(r=>r.status==='Approved' && r.requestType==='special' && r.newDate===date && r.initial===initial);
+}
+
+function isFlexApprovedWFH(date, initial){
+ const d=data();
+ return (d.wfhRequests||[]).some(r=>r.status==='Approved' && r.requestType==='flex' && r.newDate===date && r.initial===initial);
 }
 
 function isCalendarWFHChanged(date, initial){
@@ -2629,11 +2864,16 @@ function calendarLeaveLabel(r){
  if(r.type==='CCL')return 'CCL';
  if(r.type==='CCLAM')return 'CCL AM';
  if(r.type==='CCLPM')return 'CCL PM';
+  if(isOnCourseType(r.type))return 'On Course';
+  if(r.type==='UPL' && isUnconfirmedHospitalisationDeduction_(r))return 'Unpaid Hospitalisation';
   if(r.type==='UPL' && isUnconfirmedMCDeduction_(r))return 'Unpaid MC';
   if(r.type==='UPL')return 'Unpaid Leave';
- if(r.type==='MCWFH')return 'MC-WFH (No Covering)';
- if(r.type==='MC' && r.mcSession==='AM')return 'MC AM';
- if(r.type==='MC' && r.mcSession==='PM')return 'MC PM';
+  if(r.type==='MCWFH')return 'MC-WFH (No Covering)';
+  if(r.type==='HL' && r.mcSession==='AM')return 'HL AM';
+  if(r.type==='HL' && r.mcSession==='PM')return 'HL PM';
+  if(r.type==='HL')return 'Hospitalisation Leave';
+  if(r.type==='MC' && r.mcSession==='AM')return 'MC AM';
+  if(r.type==='MC' && r.mcSession==='PM')return 'MC PM';
 
  if(['AL','AM','PM'].includes(r.type)){
   const n=(r.notes||'').toLowerCase();
@@ -2654,9 +2894,14 @@ function isUnconfirmedMCDeduction_(r){
  return r && r.type==='UPL' && /unconfirmed staff|unpaid mc|mc absence|salary deduction/i.test(text);
 }
 
+function isUnconfirmedHospitalisationDeduction_(r){
+ const text=((r&&r.reason)||'')+' '+((r&&r.notes)||'');
+ return r && r.type==='UPL' && /hospitalisation leave|unpaid hospitalisation/i.test(text);
+}
+
 
 function isLeaveTypeForBuddy(type){
- return ['AL','EL','AM','PM','MC','CL','CCL','CCLAM','CCLPM','UPL'].includes(type);
+ return ['AL','EL','AM','PM','MC','HL','CL','CCL','CCLAM','CCLPM','UPL','OCP','OCU'].includes(type);
 }
 
 /* Buddy System performance + accumulated fairness fix:
@@ -3655,6 +3900,7 @@ function renderCalendar(){
   const date=iso(new Date(y,m,day)), wd=fmt(date).getDay(), tags=[];
   const ph=isPH(date); if(ph)tags.push(`<span class="tag ph">PH - ${ph[1]}</span>`);
   const block=getBlockout(date); if(block)tags.push(`<span class="tag blockout">Blocked - ${block.reason||'Event'}</span>`);
+  specialEventsForDate(date).forEach(e=>tags.push(`<span class="tag event">Event - ${e.title||'Special Event'}</span>`));
   activeMembers(d.members).filter(mem=>canShowAbsenceOnCalendar(mem.initial)).forEach(mem=>{if(birthdayOff(mem,y)===date)tags.push(`<span class="tag bday">${mem.initial} - Birthday Off</span>`)});
   activeMembers(d.members).filter(mem=>canShowAbsenceOnCalendar(mem.initial)).forEach(mem=>{const svc=serviceAnniversary(mem,y); if(svc&&svc.date===date)tags.push(`<span class="tag service">${mem.initial} - ${svc.years} Year Service</span>`)});
   const calendarWFHList=shouldShowWFHPlanningOnCalendar()?getCalendarWFHList(date).filter(x=>canShowWFHOnCalendar(x)):[];
@@ -3664,8 +3910,9 @@ function renderCalendar(){
     return;
    }
    const special=isSpecialApprovedWFH(date,x);
+   const flex=isFlexApprovedWFH(date,x);
    const changed=isCalendarWFHChanged(date,x);
-   tags.push(`<span class="tag ${special?'wfhspecial':changed?'wfhchange':'wfh'}">${x} - WFH${special?' (Special Approval)':changed?' (Changed)':''}</span>`);
+   tags.push(`<span class="tag ${special||flex?'wfhspecial':changed?'wfhchange':'wfh'}">${x} - WFH${special?' (Special Approval)':flex?' (Flex)':changed?' (Changed)':''}</span>`);
   });
   
   if(shouldShowLocalBuddyOnCalendar()){
@@ -3688,7 +3935,7 @@ function renderCalendar(){
   });
 
   activePlannerRecords(d.records).filter(r=>r.status==='Approved'&&canShowAbsenceOnCalendar(r.initial)&&safeEachDate(r.from,r.to).includes(date)).forEach(r=>{
-   tags.push(`<span class="tag ${r.type==='WFH'?'wfh':r.type==='MC'?'info':r.type==='MCWFH'?'mcwfh':'leave'}">${r.initial} - ${calendarLeaveLabel(r)}</span>`);
+   tags.push(`<span class="tag ${r.type==='WFH'?'wfh':['MC','HL'].includes(r.type)?'info':r.type==='MCWFH'?'mcwfh':'leave'}">${r.initial} - ${calendarLeaveLabel(r)}</span>`);
   });
   activeMembers(d.members).filter(mem=>canShowAbsenceOnCalendar(mem.initial) && isFallbackMCClaimDate(mem.initial,date)).forEach(mem=>{
    tags.push(`<span class="tag info">${mem.initial} - MC</span>`);
@@ -3748,7 +3995,7 @@ function childcareBalance(member){
 }
 
 
-function mcClaimDeductibleDates(initial,year=currentPlannerYear()){
+function mcClaimDeductibleDates(initial,year=currentPlannerYear(),medicalType='MC'){
  const d=data();
  const member=(d.members||[]).find(m=>m.initial===initial);
  if(!member)return [];
@@ -3758,7 +4005,7 @@ function mcClaimDeductibleDates(initial,year=currentPlannerYear()){
   r.status==='Approved' &&
   r.status!=='Rejected' &&
   r.status!=='Cancelled' &&
-  ['MC','AL','UPL','MCWFH'].includes(r.type)
+   ['MC','HL','AL','UPL','MCWFH'].includes(r.type)
  ).forEach(r=>{
   safeEachDate(r.from,r.to).forEach(day=>represented.add(day));
  });
@@ -3767,7 +4014,8 @@ function mcClaimDeductibleDates(initial,year=currentPlannerYear()){
   c.initial===initial &&
   c.status!=='Rejected' &&
   c.status!=='Cancelled' &&
-  !c.leaveClaimOnly &&
+   !c.leaveClaimOnly &&
+   (medicalType==='ALL' || (c.medicalType||'MC')===medicalType) &&
   !(Array.isArray(c.recordIds) && c.recordIds.length>0)
  ).forEach(c=>{
   const from=c.from||c.date||c.mcDate;
@@ -3791,12 +4039,15 @@ function used(initial,typeGroup,year=currentPlannerYear()){
    .filter(r=>r.initial===initial && r.status==='Approved' && r.status!=='Pending' && isValidPlannerDate(r.from) && isValidPlannerDate(r.to))
    .reduce((s,r)=>{
     if(typeGroup==='AL' && ['AL','AM','PM','EL'].includes(r.type)) return s+recordUnitsInYear_(r,year,member);
-    if(typeGroup==='MC' && r.type==='MC') return s+recordUnitsInYear_(r,year,member);
-    if(typeGroup==='CL' && r.type==='CL') return s+recordUnitsInYear_(r,year,member);
+     if(typeGroup==='MC' && r.type==='MC') return s+recordUnitsInYear_(r,year,member);
+     if(typeGroup==='HL' && r.type==='HL') return s+recordUnitsInYear_(r,year,member);
+     if(typeGroup==='HOSPITALISATION_POOL' && ['MC','HL'].includes(r.type)) return s+recordUnitsInYear_(r,year,member);
+     if(typeGroup==='CL' && r.type==='CL') return s+recordUnitsInYear_(r,year,member);
     return s;
    },0);
-  if(typeGroup==='MC') return recordUsed + mcClaimDeductibleDates(initial,year).length;
-  return recordUsed;
+   if(typeGroup==='MC') return recordUsed + mcClaimDeductibleDates(initial,year,'MC').length;
+   if(typeGroup==='HOSPITALISATION_POOL') return recordUsed + mcClaimDeductibleDates(initial,year,'ALL').length;
+   return recordUsed;
 }
 
 function recordUnitsInYear_(r,year,member){
@@ -3806,7 +4057,7 @@ function recordUnitsInYear_(r,year,member){
  const dates=eachDate(r.from,r.to).filter(date=>Number(String(date).slice(0,4))===year);
  if(!dates.length)return 0;
  if(['AM','PM','CCLAM','CCLPM'].includes(r.type))return dates.length*0.5;
- if(r.type==='MC' && units===0.5)return dates.length*0.5;
+ if(['MC','HL'].includes(r.type) && units===0.5)return dates.length*0.5;
  const workingDates=dates.filter(date=>!member || isWorkingDay(date,member));
  return workingDates.length;
 }
@@ -3874,9 +4125,16 @@ function alEntitlement(member,year=currentPlannerYear()){
 }
 
 function mcEntitlement(member){
- if(!member)return 14;
+  if(!member)return 14;
+  if(!member.confirmDate)return 0;
+  return (member.location||'Local')==='Remote'?10:14;
+}
+
+function hospitalisationEntitlement(member){
+ if(!member)return 60;
  if(!member.confirmDate)return 0;
- return (member.location||'Local')==='Remote'?10:14;
+ if((member.location||'Local')==='Remote')return 0;
+ return 60;
 }
 
 function alBalance(member,year=currentPlannerYear()){
@@ -3888,6 +4146,11 @@ function alBalance(member,year=currentPlannerYear()){
 function mcBalance(member,year=currentPlannerYear()){
  if(!member)return 0;
  return mcEntitlement(member)-used(member.initial,'MC',year);
+}
+
+function hospitalisationBalance(member,year=currentPlannerYear()){
+ if(!member)return 0;
+ return hospitalisationEntitlement(member)-used(member.initial,'HOSPITALISATION_POOL',year);
 }
 
 function compassionateEntitlement(member){
@@ -4008,9 +4271,10 @@ function renderKPI(){
   if($('adminStaffBalances')){
    $('adminStaffBalances').classList.remove('hide');
    $('adminStaffBalances').innerHTML=activeMembers(d.members).map(m=>{
-    const al=alBalance(m).toFixed(1).replace('.0','');
-    const mc=mcBalance(m).toFixed(1).replace('.0','');
-    const cl=compassionateBalance(m).toFixed(1).replace('.0','');
+     const al=alBalance(m).toFixed(1).replace('.0','');
+     const mc=mcBalance(m).toFixed(1).replace('.0','');
+     const hl=canUseHospitalisationLeave(m)?hospitalisationBalance(m).toFixed(1).replace('.0',''):'';
+     const cl=compassionateBalance(m).toFixed(1).replace('.0','');
     const pend=d.records.filter(r=>r.initial===m.initial&&r.status==='Pending').length;
     const ccl=childcareBalance(m).toFixed(1).replace('.0','');
     return `<div class="staffBalanceCard">
@@ -4018,6 +4282,7 @@ function renderKPI(){
       <div class="staffBalanceGrid">
         <div class="staffBalanceBox"><div class="num">${al}</div><div class="lbl">AL<br>Balance</div></div>
         <div class="staffBalanceBox"><div class="num">${mc}</div><div class="lbl">MC<br>Balance</div></div>
+        ${canUseHospitalisationLeave(m)?`<div class="staffBalanceBox"><div class="num">${hl}</div><div class="lbl">HL<br>Balance</div></div>`:''}
         <div class="staffBalanceBox"><div class="num">${cl}</div><div class="lbl">Compassionate</div></div>
         <div class="staffBalanceBox"><div class="num">${pend}</div><div class="lbl">Pending</div></div>
         <div class="staffBalanceBox"><div class="num">${ccl}</div><div class="lbl">CCL<br>Bal</div></div>
@@ -4040,6 +4305,8 @@ function renderKPI(){
  if($('kpiStaffName')) $('kpiStaffName').innerHTML=`Balance shown for: <b>${m.name} (${m.initial})</b>`;
  $('kAL').textContent=alBalance(m).toFixed(1).replace('.0','');
  $('kMC').textContent=mcBalance(m).toFixed(1).replace('.0','');
+ if($('kHLBox')) $('kHLBox').classList.toggle('hide',!canUseHospitalisationLeave(m));
+ if($('kHL')) $('kHL').textContent=hospitalisationBalance(m).toFixed(1).replace('.0','');
  $('kCL').textContent=compassionateBalance(m).toFixed(1).replace('.0','');
  $('kPend').textContent=d.records.filter(r=>r.initial===m.initial&&r.status==='Pending').length;
  if($('kCCL')) $('kCCL').textContent=childcareBalance(m).toFixed(1).replace('.0','');
@@ -4070,8 +4337,11 @@ function attendanceCategoryForRecord(r){
  if(['AL','AM','PM'].includes(r.type))return 'annual';
  if(r.type==='UPL' && isUnconfirmedMCDeduction_(r))return 'unpaidMedical';
  if(r.type==='UPL')return 'unpaidAL';
+ if(r.type==='OCU')return 'unpaidAL';
+ if(r.type==='OCP')return '';
  if(['CCL','CCLAM','CCLPM'].includes(r.type))return 'childcare';
  if(r.type==='MC')return 'medical';
+ if(r.type==='HL')return 'hospitalisationPool';
  if(['UMC','UMCL','UPMC','UPML','UNPAIDMC'].includes(r.type))return 'unpaidMedical';
  if(r.type==='CL')return 'compassionate';
  return '';
@@ -4088,6 +4358,7 @@ function attendanceAllocatedForCategory(member,cat,year=currentPlannerYear()){
  if(cat==='unpaidAL')return 0;
  if(cat==='childcare')return childcareEntitlement(member);
  if(cat==='medical')return mcEntitlement(member);
+ if(cat==='hospitalisationPool')return hospitalisationEntitlement(member);
  if(cat==='unpaidMedical')return 0;
  if(cat==='compassionate')return compassionateEntitlement(member);
  return 0;
@@ -4100,6 +4371,7 @@ function attendanceSummaryRows(year){
   {key:'unpaidAL',label:'Unpaid Annual Leave'},
   {key:'childcare',label:'Childcare Leave'},
   {key:'medical',label:'Medical Leave'},
+  {key:'hospitalisationPool',label:'Hospitalisation Pool (MC + HL)'},
   {key:'unpaidMedical',label:'Unpaid Medical Leave'},
   {key:'compassionate',label:'Compassionate Leave'}
  ];
@@ -4110,17 +4382,22 @@ function attendanceSummaryRows(year){
    const allocatedYear=attendanceAllocatedForCategory(m,cat.key,year);
    const row={initial:m.initial,name:m.name,category:cat.label,entitlement:allocatedYear,allocated:[0,0,0,0],taken:[0,0,0,0],totalTaken:0,balance:0};
    for(let q=1;q<=4;q++){
-    const qr=quarterDateRange(year,q);
-    row.allocated[q-1]=allocatedYear/4;
-    row.taken[q-1]=records.filter(r=>r.initial===m.initial && attendanceCategoryForRecord(r)===cat.key)
-      .reduce((sum,r)=>sum+attendanceRecordUnitsInRange(r,m,qr.start,qr.end),0);
+     const qr=quarterDateRange(year,q);
+     row.allocated[q-1]=allocatedYear/4;
+     row.taken[q-1]=records.filter(r=>r.initial===m.initial && attendanceRecordMatchesCategory_(r,cat.key))
+       .reduce((sum,r)=>sum+attendanceRecordUnitsInRange(r,m,qr.start,qr.end),0);
    }
    row.totalTaken=row.taken.reduce((a,b)=>a+b,0);
    row.balance=allocatedYear-row.totalTaken;
    rows.push(row);
   });
  });
- return rows;
+  return rows;
+}
+
+function attendanceRecordMatchesCategory_(r,catKey){
+ if(catKey==='hospitalisationPool')return ['MC','HL'].includes(r.type);
+ return attendanceCategoryForRecord(r)===catKey;
 }
 function ensureSummaryYearOptions(){
  if(!$('summaryYear'))return;
@@ -4305,7 +4582,7 @@ function renderRecords(){
   const canApprove=isAdministrator() && r.status==='Pending';
 
   return `<div class="item">
-    <b>${staffName} (${r.initial}) - ${r.type}</b>
+    <b>${staffName} (${r.initial}) - ${calendarLeaveLabel(r)}</b>
     <div>${r.from} to ${r.to}</div>
     <div class="muted">${r.reason||r.notes||''}${r.consultFee?`<br>Consultation Fee: $${Number(r.consultFee).toFixed(2)}`:''}</div>
     <span class="status ${r.status.toLowerCase()}">${r.status}</span>
@@ -4328,12 +4605,13 @@ function renderStaffMCClaimStatus(){
  }
  const claims=(d.mcClaims||[]).filter(c=>c.initial===initial).sort((a,b)=>(b.id||0)-(a.id||0));
  $('staffMCClaimStatusList').innerHTML=claims.map(c=>{
-  const amount=Number(c.amount)||0;
-  const status=c.status||'Unpaid';
-  const paidText=status==='Paid'?(c.paidOn?`Paid on ${c.paidOn}`:'Paid'):'Pending payment';
-  const leaveNote=c.leaveStatus?`<br><span class="smallText">${c.leaveStatus}</span>`:'';
-  return `<div class="item">
-    <b>${c.from} to ${c.to} - Consultation Fee $${amount.toFixed(2)}</b>
+   const amount=Number(c.amount)||0;
+   const status=c.status||'Unpaid';
+   const paidText=status==='Paid'?(c.paidOn?`Paid on ${c.paidOn}`:'Paid'):'Pending payment';
+   const leaveNote=c.leaveStatus?`<br><span class="smallText">${c.leaveStatus}</span>`:'';
+   const claimLabel=c.medicalType==='HL'?'Hospitalisation Consultation Fee':'MC Consultation Fee';
+   return `<div class="item">
+    <b>${c.from} to ${c.to} - ${claimLabel} $${amount.toFixed(2)}</b>
     <div class="muted">${c.file||'No file'}${c.remarks?`<br>${c.remarks}`:''}${leaveNote}</div>
     <span class="status ${status==='Paid'?'approved':'pending'}">${status}</span>
     <div class="smallText" style="margin-top:6px">${paidText}</div>
@@ -4510,7 +4788,7 @@ function payClaim(category,id){
   d.servicePaymentsPaid.push({key,initial,years,year,amount:servicePaymentAmount(years),status:'Paid',paidOn:iso(new Date())});
  }else if(category==='unpaidLeave'){
   const r=(d.records||[]).find(x=>x.id===id);
-  if(!r || r.type!=='UPL')return alert('Unpaid leave record not found.');
+  if(!r || !['UPL','OCU'].includes(r.type))return alert('Unpaid leave record not found.');
   if(!d.unpaidLeaveDeductions)d.unpaidLeaveDeductions=[];
   const key=unpaidLeaveDeductionKey(r);
   if(d.unpaidLeaveDeductions.some(x=>x.key===key))return alert('This unpaid leave has already been marked as deducted.');
@@ -4561,7 +4839,8 @@ function renderMCClaims(){
   const statusClass=(status==='Paid'||status==='Acknowledged')?'mcPaid':'mcUnpaid';
   const processedOn=c.paidOn||c.acknowledgedOn||'';
   const processedText=processedOn?`<br><span class="smallText">${status==='Acknowledged'?'Acknowledged':'Paid'} on ${processedOn}</span>`:'';
-  rows.push({status,id:c.id,html:`<tr><td>${action}</td><td>${c.from} to ${c.to}</td><td>MC Consultation Fee${leaveNote}</td><td>${staff?staff.name:c.initial} (${c.initial})</td><td>$${amount.toFixed(2)}</td><td>${mcFileLink(c)}</td><td>${c.remarks||''}</td><td><span class="status ${statusClass}">${status}</span>${processedText}</td></tr>`});
+   const claimLabel=c.medicalType==='HL'?'Hospitalisation Consultation Fee':'MC Consultation Fee';
+   rows.push({status,id:c.id,html:`<tr><td>${action}</td><td>${c.from} to ${c.to}</td><td>${claimLabel}${leaveNote}</td><td>${staff?staff.name:c.initial} (${c.initial})</td><td>$${amount.toFixed(2)}</td><td>${mcFileLink(c)}</td><td>${c.remarks||''}</td><td><span class="status ${statusClass}">${status}</span>${processedText}</td></tr>`});
  });
 
  (d.generalClaims||[]).filter(c=>{
@@ -4577,14 +4856,14 @@ function renderMCClaims(){
  });
 
  (d.records||[]).filter(r=>{
-  if(!(r.type==='UPL' && r.status==='Approved'))return false;
+  if(!(['UPL','OCU'].includes(r.type) && r.status==='Approved'))return false;
   const deducted=getUnpaidLeaveDeductionStatus(d,r);
   return includeClaimForSelectedMonth(claimMonthFromDate(r.from),deducted?'Deducted':'Unpaid');
  }).forEach(r=>{
   const staff=d.members.find(m=>m.initial===r.initial);
   const deducted=getUnpaidLeaveDeductionStatus(d,r);
   const status=deducted?'Deducted':'Pending Deduction';
-  const deductionLabel=isUnconfirmedMCDeduction_(r)?'Unpaid MC Wage Deduction':'Unpaid Leave Wage Deduction';
+   const deductionLabel=r.type==='OCU'?'On Course Unpaid Wage Deduction':(isUnconfirmedHospitalisationDeduction_(r)?'Unpaid Hospitalisation Wage Deduction':(isUnconfirmedMCDeduction_(r)?'Unpaid MC Wage Deduction':'Unpaid Leave Wage Deduction'));
   rows.push({status:deducted?'Paid':'Unpaid',id:r.id,html:`<tr><td>${deducted?'<span class="muted">Deducted</span>':`<button class="danger small" onclick="payClaim('unpaidLeave',${r.id})">Deduct</button>`}</td><td>${r.from} to ${r.to}</td><td>${deductionLabel}</td><td>${staff?staff.name:r.initial} (${r.initial})</td><td>${Number(r.units||0).toFixed(1).replace('.0','')} day(s)</td><td>-</td><td>${r.reason||r.notes||''}</td><td><span class="status ${deducted?'mcPaid':'mcUnpaid'}">${status}</span>${deducted?.deductedOn?`<br><span class="smallText">Deducted on ${deducted.deductedOn}</span>`:''}</td></tr>`});
  });
 
