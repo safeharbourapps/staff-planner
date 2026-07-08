@@ -221,7 +221,7 @@ body.isAdmin span.adminOnly.hide{
   <div><div class="logo">Staff Planner</div><div class="muted" style="color:#d8c8ad">Leave · WFH · Birthday Off · Singapore PH</div></div>
   <div class="row" style="flex:0 0 auto">
     <span id="who" class="pill">Not logged in</span>
-    <span id="appVersionLabel" class="pill" style="font-size:11px;color:#d8c8ad" title="Staff Planner version">v2026.07.03.09 | Updated 03 Jul 2026 | Flex WFH Cancel + Replan</span>
+    <span id="appVersionLabel" class="pill" style="font-size:11px;color:#d8c8ad" title="Staff Planner version">v2026.07.08.11 | Updated 08 Jul 2026 | Direct WFH Calendar Safety</span>
     <button id="logoutBtn" class="secondary small hide" onclick="logout()">Logout</button>
   </div>
 
@@ -646,6 +646,24 @@ body.isAdmin span.adminOnly.hide{
 <script>
 /*
 CHANGE LOG
+v2026.07.08.11 | Updated 08 Jul 2026 | Direct WFH Calendar Safety
+- Features added: none; calendar display safety fix only.
+- Features changed: approved direct Special/Flex WFH requests are rendered on the calendar even if the computed swap/replan WFH list misses them.
+- Bugs fixed: approved Special WFH such as TPH on 10 Jul 2026 can be hidden when another WFH swap/change removes the same staff from the computed WFH list.
+- Files modified: index HTML only.
+- Functions modified: directApprovedWFHRequestsForDate, renderCalendar.
+- Features NOT modified: WFH approval rules, WFH swap logic, Flex WFH limits, login, Google Sheet load/save, Apps Script, Data tab, JSON format, leave/MC/HL, claims payment, buddy rules.
+- Testing performed: embedded JavaScript syntax check passes.
+
+v2026.07.08.10 | Updated 08 Jul 2026 | HL Replaces MC Overlap
+- Features added: none; medical record overlap safety fix only.
+- Features changed: when Hospitalisation Leave is submitted over existing approved MC dates for the same staff, the overlapping MC record is cancelled and any non-overlapping MC dates are kept as separate approved MC records; calendar also suppresses existing duplicate MC tags on dates where the same staff has approved HL.
+- Bugs fixed: calendar and balances no longer show/count both MC and Hospitalisation Leave for the same staff on the same date after HL conversion.
+- Files modified: index HTML only.
+- Functions modified: cancelOverlappingMedicalRecordsForHL, submitMC, renderCalendar.
+- Features NOT modified: login, Google Sheet load/save, Apps Script, Data tab, JSON format, WFH/Flex WFH, claims payment, buddy rules, leave application rules.
+- Testing performed: embedded JavaScript syntax check passes.
+
 v2026.07.03.09 | Updated 03 Jul 2026 | Flex WFH Cancel + Replan
 - Features added: Flex-eligible staff can cancel future Flex WFH records and reapply; Flex-eligible staff can replan one fixed WFH day to another working day without approval.
 - Features changed: WFH request dropdown shows Flex WFH and fixed-WFH replan only when selected/logged-in staff has Flex WFH allowance above 0.
@@ -2380,6 +2398,49 @@ function cancelOverlappingLeaveForMC(initial, from, to, leaveName='MC'){
  return cancelledCount;
 }
 
+function cancelOverlappingMedicalRecordsForHL(d, initial, hlDates){
+ const overlapDates=new Set(hlDates||[]);
+ if(!overlapDates.size)return 0;
+ let cancelledCount=0;
+ const newRecords=[];
+
+ (d.records||[]).forEach(r=>{
+  if(
+   r.initial===initial &&
+   r.type==='MC' &&
+   r.status==='Approved' &&
+   safeEachDate(r.from,r.to).some(date=>overlapDates.has(date))
+  ){
+   const originalDates=safeEachDate(r.from,r.to);
+   const remainingDates=originalDates.filter(date=>!overlapDates.has(date));
+   r.status='Cancelled';
+   r.cancelledBy='Hospitalisation Leave';
+   r.cancelledOn=iso(new Date());
+   r.notes=(r.notes?r.notes+' ':'')+'Auto-cancelled because Hospitalisation Leave replaced overlapping MC date(s).';
+   cancelledCount++;
+
+   buildContiguousDateGroups(remainingDates).forEach(g=>{
+    if(!g.length)return;
+    const recordUnits=r.mcSession==='AM'||r.mcSession==='PM'?0.5:g.length;
+    newRecords.push({
+     ...r,
+     id:Date.now()+Math.floor(Math.random()*1000000),
+     from:g[0],
+     to:g[g.length-1],
+     units:recordUnits,
+     status:'Approved',
+     notes:(r.notes||'')+' Remaining MC kept after Hospitalisation Leave replacement.',
+     cancelledBy:'',
+     cancelledOn:''
+    });
+   });
+  }
+ });
+
+ if(newRecords.length)d.records.push(...newRecords);
+ return cancelledCount;
+}
+
 function buildContiguousDateGroups(dates){
  const groups=[];
  let current=[];
@@ -2443,6 +2504,7 @@ async function submitMC(){
   const cancelledCount=(!halfDayMC && realMCDates.length) ? cancelOverlappingLeaveForMC(initial,realMCDates[0],realMCDates[realMCDates.length-1],leaveName) : 0;
 
  const latest=data();
+ const replacedMCCount=leaveType==='HL'?cancelOverlappingMedicalRecordsForHL(latest,initial,realMCDates):0;
  const file=$('mcFile').files[0];
  const mcAttachment=await readClaimReceiptFile(file);
  const fileName=mcAttachment.receiptName||'No file';
@@ -2543,7 +2605,7 @@ async function submitMC(){
   if(buckets.UPL.length)breakdown.push((buckets.UPL.length*mcUnitPerDate)+' Unpaid Leave');
   if(mcWFHDates.length)breakdown.push(mcWFHDates.length+' MC-WFH');
   updateMCMedicalLabels();
-  alert(leaveName+' submitted. Deduction breakdown: '+breakdown.join(', ')+'. '+(cancelledCount>0?cancelledCount+' overlapping leave record(s) were automatically cancelled and replaced by '+leaveName+'. ':'')+'File name recorded: '+fileName+(consultFee>0?'. Consultation fee: $'+consultFee.toFixed(2):''));
+  alert(leaveName+' submitted. Deduction breakdown: '+breakdown.join(', ')+'. '+(cancelledCount>0?cancelledCount+' overlapping leave record(s) were automatically cancelled and replaced by '+leaveName+'. ':'')+(replacedMCCount>0?replacedMCCount+' overlapping MC record(s) were automatically replaced by Hospitalisation Leave. ':'')+'File name recorded: '+fileName+(consultFee>0?'. Consultation fee: $'+consultFee.toFixed(2):''));
  renderAll();
 }
 
@@ -2933,6 +2995,16 @@ function isSpecialApprovedWFH(date, initial){
 function isFlexApprovedWFH(date, initial){
  const d=data();
  return (d.wfhRequests||[]).some(r=>r.status==='Approved' && r.requestType==='flex' && r.newDate===date && r.initial===initial);
+}
+
+function directApprovedWFHRequestsForDate(date){
+ const d=data();
+ return (d.wfhRequests||[]).filter(r=>
+  r.status==='Approved' &&
+  (r.requestType==='special'||r.requestType==='flex') &&
+  r.newDate===date &&
+  canShowWFHOnCalendar(r.initial)
+ );
 }
 
 function isCalendarWFHChanged(date, initial){
@@ -4055,6 +4127,10 @@ function renderCalendar(){
    const changed=isCalendarWFHChanged(date,x);
    tags.push(`<span class="tag ${special||flex?'wfhspecial':changed?'wfhchange':'wfh'}">${x} - WFH${special?' (Special Approval)':flex?' (Flex)':changed?' (Changed)':''}</span>`);
   });
+  directApprovedWFHRequestsForDate(date).forEach(r=>{
+   if(calendarWFHList.includes(r.initial))return;
+   tags.push(`<span class="tag wfhspecial">${r.initial} - WFH${r.requestType==='flex'?' (Flex)':' (Special Approval)'}</span>`);
+  });
   
   if(shouldShowLocalBuddyOnCalendar()){
     const localBuddy=localBuddyAssignmentsForDate(date);
@@ -4075,7 +4151,9 @@ function renderCalendar(){
    tags.push(`<span class="tag worktime">${r.initial} - Work Time ${formatTimeForDisplay(r.start)}-${formatTimeForDisplay(r.end)}</span>`);
   });
 
-  activePlannerRecords(d.records).filter(r=>r.status==='Approved'&&canShowAbsenceOnCalendar(r.initial)&&safeEachDate(r.from,r.to).includes(date)).forEach(r=>{
+  const approvedRecordsForDate=activePlannerRecords(d.records).filter(r=>r.status==='Approved'&&canShowAbsenceOnCalendar(r.initial)&&safeEachDate(r.from,r.to).includes(date));
+  const hlInitialsForDate=new Set(approvedRecordsForDate.filter(r=>r.type==='HL').map(r=>r.initial));
+  approvedRecordsForDate.filter(r=>!(r.type==='MC'&&hlInitialsForDate.has(r.initial))).forEach(r=>{
    tags.push(`<span class="tag ${r.type==='WFH'?'wfh':['MC','HL'].includes(r.type)?'info':r.type==='MCWFH'?'mcwfh':'leave'}">${r.initial} - ${calendarLeaveLabel(r)}</span>`);
   });
   activeMembers(d.members).filter(mem=>canShowAbsenceOnCalendar(mem.initial) && isFallbackMCClaimDate(mem.initial,date)).forEach(mem=>{
