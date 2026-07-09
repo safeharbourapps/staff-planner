@@ -221,7 +221,7 @@ body.isAdmin span.adminOnly.hide{
   <div><div class="logo">Staff Planner</div><div class="muted" style="color:#d8c8ad">Leave · WFH · Birthday Off · Singapore PH</div></div>
   <div class="row" style="flex:0 0 auto">
     <span id="who" class="pill">Not logged in</span>
-    <span id="appVersionLabel" class="pill" style="font-size:11px;color:#d8c8ad" title="Staff Planner version">v2026.07.08.11 | Updated 08 Jul 2026 | Direct WFH Calendar Safety</span>
+    <span id="appVersionLabel" class="pill" style="font-size:11px;color:#d8c8ad" title="Staff Planner version">v2026.07.09.01 | Updated 09 Jul 2026 | Flex Replan No Swap</span>
     <button id="logoutBtn" class="secondary small hide" onclick="logout()">Logout</button>
   </div>
 
@@ -646,6 +646,15 @@ body.isAdmin span.adminOnly.hide{
 <script>
 /*
 CHANGE LOG
+v2026.07.09.01 | Updated 09 Jul 2026 | Flex Replan No Swap
+- Features added: none; WFH calendar rule correction only.
+- Features changed: approved Flex fixed-day replan is treated as a personal replan only; it no longer swaps or replaces the original WFH slot with another same-type staff.
+- Bugs fixed: when ZWW replanned fixed WFH from 16 Jul 2026 to 17 Jul 2026, TSH was incorrectly pulled into 16 Jul 2026 as WFH (Changed).
+- Files modified: index HTML only.
+- Functions modified: getCalendarWFHList.
+- Features NOT modified: Flex WFH allowance, Flex WFH submission, WFH approval rules, WFH swap logic for normal swaps, login, Google Sheet load/save, Apps Script, Data tab, JSON format, leave/MC/HL, claims payment, buddy rules.
+- Testing performed: embedded JavaScript syntax check passes; exported JSON calculation confirms 16 Jul 2026 final WFH changes from TLK+TSH to TLK only after ignoring flexReplan in swap loop.
+
 v2026.07.08.11 | Updated 08 Jul 2026 | Direct WFH Calendar Safety
 - Features added: none; calendar display safety fix only.
 - Features changed: approved direct Special/Flex WFH requests are rendered on the calendar even if the computed swap/replan WFH list misses them.
@@ -2950,6 +2959,7 @@ function getCalendarWFHList(date){
     if(date===r.newDate && !list.includes(r.initial)) list.push(r.initial);
     return;
   }
+  if(r.requestType==='flexReplan') return;
 
   const req=r.initial;
   let swap=r.swapWith;
