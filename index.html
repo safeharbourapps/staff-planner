@@ -221,7 +221,7 @@ body.isAdmin span.adminOnly.hide{
   <div><div class="logo">Staff Planner</div><div class="muted" style="color:#d8c8ad">Leave · WFH · Birthday Off · Singapore PH</div></div>
   <div class="row" style="flex:0 0 auto">
     <span id="who" class="pill">Not logged in</span>
-    <span id="appVersionLabel" class="pill" style="font-size:11px;color:#d8c8ad" title="Staff Planner version">v2026.07.09.01 | Updated 09 Jul 2026 | Flex Replan No Swap</span>
+    <span id="appVersionLabel" class="pill" style="font-size:11px;color:#d8c8ad" title="Staff Planner version">v2026.07.09.02 | Updated 09 Jul 2026 | MC HL Overlap Balance Fix</span>
     <button id="logoutBtn" class="secondary small hide" onclick="logout()">Logout</button>
   </div>
 
@@ -646,6 +646,15 @@ body.isAdmin span.adminOnly.hide{
 <script>
 /*
 CHANGE LOG
+v2026.07.09.02 | Updated 09 Jul 2026 | MC HL Overlap Balance Fix
+- Features added: none; balance calculation correction only.
+- Features changed: MC balance and Hospitalisation Leave pool now exclude approved MC units on dates where the same staff also has approved HL, so converted MC-to-HL dates are not double-counted.
+- Bugs fixed: YLC MC/HL balance incorrectly showed MC 2.5 and HL 34 because 29 Jun to 3 Jul 2026 MC remained active after HL conversion.
+- Files modified: index HTML only.
+- Functions modified: approvedHLDatesForStaffYear_, recordUnitsInYearExcludingDates_, used.
+- Features NOT modified: login, Google Sheet load/save, Apps Script, Data tab, JSON format, MC/HL submission, claims payment, WFH/Flex WFH, buddy rules, calendar display.
+- Testing performed: embedded JavaScript syntax check passes; exported JSON calculation confirms YLC MC balance becomes 7 and HL balance becomes 38.5.
+
 v2026.07.09.01 | Updated 09 Jul 2026 | Flex Replan No Swap
 - Features added: none; WFH calendar rule correction only.
 - Features changed: approved Flex fixed-day replan is treated as a personal replan only; it no longer swaps or replaces the original WFH slot with another same-type staff.
@@ -4264,19 +4273,49 @@ function isFallbackMCClaimDate(initial,date){
 function used(initial,typeGroup,year=currentPlannerYear()){
   const d=data();
   const member=(d.members||[]).find(m=>m.initial===initial);
+  const hlOverlapDates=(typeGroup==='MC'||typeGroup==='HOSPITALISATION_POOL')?approvedHLDatesForStaffYear_(initial,year,member,d.records):new Set();
   const recordUsed=d.records
    .filter(r=>r.initial===initial && r.status==='Approved' && r.status!=='Pending' && isValidPlannerDate(r.from) && isValidPlannerDate(r.to))
    .reduce((s,r)=>{
     if(typeGroup==='AL' && ['AL','AM','PM','EL'].includes(r.type)) return s+recordUnitsInYear_(r,year,member);
-     if(typeGroup==='MC' && r.type==='MC') return s+recordUnitsInYear_(r,year,member);
+     if(typeGroup==='MC' && r.type==='MC') return s+recordUnitsInYearExcludingDates_(r,year,member,hlOverlapDates);
      if(typeGroup==='HL' && r.type==='HL') return s+recordUnitsInYear_(r,year,member);
-     if(typeGroup==='HOSPITALISATION_POOL' && ['MC','HL'].includes(r.type)) return s+recordUnitsInYear_(r,year,member);
+     if(typeGroup==='HOSPITALISATION_POOL' && r.type==='MC') return s+recordUnitsInYearExcludingDates_(r,year,member,hlOverlapDates);
+     if(typeGroup==='HOSPITALISATION_POOL' && r.type==='HL') return s+recordUnitsInYear_(r,year,member);
      if(typeGroup==='CL' && r.type==='CL') return s+recordUnitsInYear_(r,year,member);
     return s;
    },0);
    if(typeGroup==='MC') return recordUsed + mcClaimDeductibleDates(initial,year,'MC').length;
    if(typeGroup==='HOSPITALISATION_POOL') return recordUsed + mcClaimDeductibleDates(initial,year,'ALL').length;
    return recordUsed;
+}
+
+function approvedHLDatesForStaffYear_(initial,year,member,records){
+ const dates=new Set();
+ (records||[]).filter(r=>
+  r.initial===initial &&
+  r.status==='Approved' &&
+  r.type==='HL' &&
+  isValidPlannerDate(r.from) &&
+  isValidPlannerDate(r.to)
+ ).forEach(r=>{
+  safeEachDate(r.from,r.to).forEach(date=>{
+   if(Number(String(date).slice(0,4))===year && (!member || isWorkingDay(date,member)))dates.add(date);
+  });
+ });
+ return dates;
+}
+
+function recordUnitsInYearExcludingDates_(r,year,member,excludeDates){
+ if(!excludeDates || !excludeDates.size)return recordUnitsInYear_(r,year,member);
+ const units=+r.units||0;
+ if(!isValidPlannerDate(r.from) || !isValidPlannerDate(r.to))return 0;
+ const dates=safeEachDate(r.from,r.to).filter(date=>Number(String(date).slice(0,4))===year && !excludeDates.has(date));
+ if(!dates.length)return 0;
+ if(isHalfDayLeaveType(r.type))return dates.length*0.5;
+ if(['MC','HL'].includes(r.type) && units===0.5)return dates.length*0.5;
+ const workingDates=dates.filter(date=>!member || isWorkingDay(date,member));
+ return workingDates.length;
 }
 
 function recordUnitsInYear_(r,year,member){
