@@ -221,7 +221,7 @@ body.isAdmin span.adminOnly.hide{
   <div><div class="logo">Staff Planner</div><div class="muted" style="color:#d8c8ad">Leave · WFH · Birthday Off · Singapore PH</div></div>
   <div class="row" style="flex:0 0 auto">
     <span id="who" class="pill">Not logged in</span>
-    <span id="appVersionLabel" class="pill" style="font-size:11px;color:#d8c8ad" title="Staff Planner version">v2026.07.09.02 | Updated 09 Jul 2026 | MC HL Overlap Balance Fix</span>
+    <span id="appVersionLabel" class="pill" style="font-size:11px;color:#d8c8ad" title="Staff Planner version">v2026.07.15.05 | Updated 15 Jul 2026 | Admin Cover Preserve Selection</span>
     <button id="logoutBtn" class="secondary small hide" onclick="logout()">Logout</button>
   </div>
 
@@ -646,6 +646,51 @@ body.isAdmin span.adminOnly.hide{
 <script>
 /*
 CHANGE LOG
+v2026.07.15.05 | Updated 15 Jul 2026 | Admin Cover Preserve Selection
+- Features added: none; UI correction only.
+- Features changed: Admin Manual Cover Change now captures the selected absent staff before rebuilding the dropdown.
+- Bugs fixed: selecting ZWW currently covered by CI could still revert to YLC because the dropdown was cleared before the selected value was saved.
+- Files modified: index HTML only.
+- Functions modified: refreshAdminCoverChangeOptions.
+- Features NOT modified: Google Sheet load/save, Apps Script, Data tab, JSON format, login, leave records, MC/HL balances, claims, WFH/Flex WFH, Buddy assignment rules.
+- Testing performed: embedded JavaScript syntax check passes.
+
+v2026.07.15.04 | Updated 15 Jul 2026 | Admin Cover Dropdown Selection Fix
+- Features added: none; UI correction only.
+- Features changed: Admin Manual Cover Change now respects the newly selected absent staff before restoring the previously remembered selection.
+- Bugs fixed: selecting another absent staff, such as ZWW currently covered by CI, could snap back to the previously selected YLC assignment.
+- Files modified: index HTML only.
+- Functions modified: refreshAdminCoverChangeOptions.
+- Features NOT modified: Google Sheet load/save, Apps Script, Data tab, JSON format, login, leave records, MC/HL balances, claims, WFH/Flex WFH, Buddy assignment rules.
+- Testing performed: embedded JavaScript syntax check passes.
+
+v2026.07.15.03 | Updated 15 Jul 2026 | Local CSO 1-to-2 Final Fallback
+- Features added: when Local CSO cover and Remote Lead fallback are still not enough, an available Local CSO may cover a second Local CSO absence as the final 1-to-2 fallback.
+- Features changed: final Local CSO 1-to-2 fallback now uses available Local CSO staff even if they were already assigned one cover duty on the same date.
+- Bugs fixed: 17 Jul 2026 could show ZWW on MC without any cover after TPH covered YLC and TSH covered CI.
+- Files modified: index HTML only.
+- Functions modified: Buddy local assignment loops in getBuddyTimeline and buddyYearToDateCoverageStats.
+- Features NOT modified: Google Sheet load/save, Apps Script, Data tab, JSON format, login, leave records, MC/HL balances, claims, WFH/Flex WFH, cover swap approval flow.
+- Testing performed: embedded JavaScript syntax check passes.
+
+v2026.07.15.02 | Updated 15 Jul 2026 | Remote Lead Uncovered Local Absence
+- Features added: if a Local CSO absence remains uncovered after available Local CSO cover is assigned, the Buddy System may assign an available Remote Lead to that uncovered Local CSO absence.
+- Features changed: Local cover assignment now uses Local CSO first, then Remote Lead for still-uncovered Local CSO absence, before repeated local 1-to-2 fallback.
+- Bugs fixed: 17 Jul 2026 could show CI on AL without a cover assignment, so Administrator could not select CI and change cover to TSH.
+- Files modified: index HTML only.
+- Functions modified: Buddy local assignment loops in getBuddyTimeline and buddyYearToDateCoverageStats.
+- Features NOT modified: Google Sheet load/save, Apps Script, Data tab, JSON format, login, leave records, MC/HL balances, claims, WFH/Flex WFH, cover swap approval flow.
+- Testing performed: embedded JavaScript syntax check passes.
+
+v2026.07.15.01 | Updated 15 Jul 2026 | Remote Lead Local Cover Fallback
+- Features added: Remote Lead may cover a Local CSO absence only when no Local CSO cover option is available for that date.
+- Features changed: Buddy local cover fallback and Administrator manual cover dropdown now offer Remote Lead as the last fallback, while normal Remote CSO staff are still excluded from Local CSO cover.
+- Bugs fixed: Administrator manual cover change could show no available cover when all Local CSO options were unavailable, even though Remote Lead was available to cover local staff.
+- Files modified: index HTML only.
+- Functions modified: isBuddyLockCoverAvailable_, added availableRemoteLeadCoverPool_ and availableLocalCoverFallbackPool_, Buddy local assignment fallback, Admin Manual Cover Change dropdown.
+- Features NOT modified: Google Sheet load/save, Apps Script, Data tab, JSON format, login, leave records, MC/HL balances, claims, WFH/Flex WFH, cover swap approval flow.
+- Testing performed: embedded JavaScript syntax check passes.
+
 v2026.07.09.02 | Updated 09 Jul 2026 | MC HL Overlap Balance Fix
 - Features added: none; balance calculation correction only.
 - Features changed: MC balance and Hospitalisation Leave pool now exclude approved MC units on dates where the same staff also has approved HL, so converted MC-to-HL dates are not double-counted.
@@ -3222,6 +3267,17 @@ function availableLocalCSOPool(date,exclude=[]){
    !isAbsentForBuddy(m.initial,date)
  );
 }
+function availableRemoteLeadCoverPool_(date,exclude=[]){
+ return buddyMembers().filter(m=>
+   isRemoteLead(m) &&
+   !exclude.includes(m.initial) &&
+   !isAbsentForBuddy(m.initial,date)
+ );
+}
+function availableLocalCoverFallbackPool_(date,exclude=[]){
+ const localPool=availableLocalCSOPool(date,exclude);
+ return localPool.length ? localPool : availableRemoteLeadCoverPool_(date,exclude);
+}
 function sortBuddyPoolByAccumulated(pool,runningCounts){
  return pool.slice().sort((a,b)=>{
    const ca=runningCounts[a.initial]||0;
@@ -3296,7 +3352,7 @@ function activeBuddyLockFor_(coverType,date,absent){
 function isBuddyLockCoverAvailable_(coverType,cover,date){
  const m=buddyMembers().find(x=>x.initial===cover);
  if(!m || isAbsentForBuddy(cover,date))return false;
- return coverType==='remote' ? (isLocalBuddyCSO(m)||isRemoteLead(m)) : isLocalBuddyCSO(m);
+ return coverType==='remote' ? (isLocalBuddyCSO(m)||isRemoteLead(m)) : (isLocalBuddyCSO(m)||isRemoteLead(m));
 }
 function lockedLocalAssignmentFor_(date,absent){
  const lock=activeBuddyLockFor_('local',date,absent);
@@ -3618,7 +3674,7 @@ function getBuddyTimeline(){
       });
 
       let pool=sortBuddyPoolByAccumulated(
-        availableLocalCSOPool(date,[]).filter(m=>!usedCover.has(m.initial)),
+        availableLocalCoverFallbackPool_(date,[]).filter(m=>!usedCover.has(m.initial)),
         runningCounts
       );
 
@@ -3631,9 +3687,26 @@ function getBuddyTimeline(){
         }
      });
 
+      const remoteLeadPool=sortBuddyPoolByAccumulated(
+        availableRemoteLeadCoverPool_(date,[]).filter(m=>!usedCover.has(m.initial)),
+        runningCounts
+      );
       localAbsent.forEach(a=>{
         if(localAssignments.some(x=>x.absent===a.initial))return;
-        const fallback=pool[localAssignments.length % pool.length];
+        const available=remoteLeadPool.find(p=>!usedCover.has(p.initial));
+        if(available){
+          localAssignments.push({absent:a.initial,cover:available.initial,mode:'Remote Lead Fallback'});
+          usedCover.add(available.initial);
+        }
+      });
+
+      const repeatLocalPool=sortBuddyPoolByAccumulated(
+        availableLocalCSOPool(date,[]),
+        runningCounts
+      );
+      localAbsent.forEach(a=>{
+        if(localAssignments.some(x=>x.absent===a.initial))return;
+        const fallback=repeatLocalPool[localAssignments.length % repeatLocalPool.length];
         if(fallback)localAssignments.push({absent:a.initial,cover:fallback.initial,mode:'1-to-2'});
      });
 
@@ -3759,7 +3832,7 @@ function buddyYearToDateCoverageStats(){
   const localAbsent=localCSOAbsentList(date);
 
   if(localAbsent.length>0){
-   let pool=sortBuddyPoolByAccumulated(availableLocalCSOPool(date,[]),runningCounts);
+   let pool=sortBuddyPoolByAccumulated(availableLocalCoverFallbackPool_(date,[]),runningCounts);
    const usedCover=new Set();
 
    localAbsent.forEach(a=>{
@@ -3770,9 +3843,26 @@ function buddyYearToDateCoverageStats(){
     }
    });
 
+   const remoteLeadPool=sortBuddyPoolByAccumulated(
+    availableRemoteLeadCoverPool_(date,[]).filter(m=>!usedCover.has(m.initial)),
+    runningCounts
+   );
    localAbsent.forEach(a=>{
     if(localAssignments.some(x=>x.absent===a.initial))return;
-    const fallback=pool[localAssignments.length % pool.length];
+    const available=remoteLeadPool.find(p=>!usedCover.has(p.initial));
+    if(available){
+     localAssignments.push({absent:a.initial,cover:available.initial,mode:'Remote Lead Fallback'});
+     usedCover.add(available.initial);
+    }
+   });
+
+   const repeatLocalPool=sortBuddyPoolByAccumulated(
+    availableLocalCSOPool(date,[]),
+    runningCounts
+   );
+   localAbsent.forEach(a=>{
+    if(localAssignments.some(x=>x.absent===a.initial))return;
+    const fallback=repeatLocalPool[localAssignments.length % repeatLocalPool.length];
     if(fallback)localAssignments.push({absent:a.initial,cover:fallback.initial,mode:'1-to-2'});
    });
 
@@ -3873,6 +3963,7 @@ function refreshAdminCoverChangeOptions(){
  const newSel=$('adminCoverNew');
  const currentBox=$('adminCoverCurrent');
  if(!absentSel||!newSel||!currentBox)return;
+ const previousAbsent=absentSel.value || absentSel.dataset.selected;
 
  absentSel.innerHTML='';
  newSel.innerHTML='';
@@ -3894,7 +3985,6 @@ function refreshAdminCoverChangeOptions(){
   return;
  }
 
- const previousAbsent=absentSel.dataset.selected || absentSel.value;
  assignments.forEach(a=>{
   const absentKey=coverType==='remote'?a.remote:a.absent;
   const label=coverType==='remote'
@@ -3916,18 +4006,13 @@ function refreshAdminCoverChangeOptions(){
  const currentChangedFrom=current.originalCover && current.originalCover!==current.cover;
  currentBox.textContent=`Current cover: ${current.cover}${currentChangedFrom?' (changed from '+current.originalCover+')':''}`;
 
- const pool=buddyMembers().filter(m=>
-  isLocalBuddyCSO(m) &&
-  m.initial!==selectedAbsent &&
-  m.initial!==current.cover &&
-  !isAbsentForBuddy(m.initial,date)
- );
+ const pool=availableLocalCoverFallbackPool_(date,[selectedAbsent,current.cover]);
 
  pool.sort((a,b)=>a.initial.localeCompare(b.initial)).forEach(m=>{
   newSel.add(new Option(`${m.initial} - ${m.name}`,m.initial));
  });
 
- if(!pool.length)newSel.add(new Option('No available Local CSO',''));
+ if(!pool.length)newSel.add(new Option('No available Local CSO / Remote Lead',''));
 }
 
 function adminManualCoverChange(){
